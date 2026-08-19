@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CA Tracker">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
 <title>CA Final Study Tracker</title>
 <style>
   * { box-sizing: border-box; }
@@ -110,6 +117,14 @@
   .target-row span { flex: 1; font-size: 12px; color: #c8ccd3; }
   .target-row input { width: 80px; }
 
+  .preset-row { display: flex; gap: 6px; margin-top: 8px; }
+  .preset-btn {
+    flex: 1; margin-top: 0; background: #2c3038; border: none; color: #c8ccd3;
+    padding: 8px 0; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .preset-btn:hover { background: #374151; }
+  .preset-btn.active { background: #2563eb; color: #fff; }
+
   .hidden { display: none; }
   code { background: #0f1115; padding: 2px 5px; border-radius: 4px; font-size: 12px; }
   a { color: #7dd3fc; }
@@ -154,6 +169,7 @@
   .subj-target-block { padding: 12px 0; border-bottom: 1px solid #21262d; }
   .subj-target-block:last-child { border-bottom: none; }
   .subj-target-name { font-size: 13px; font-weight: 600; color: #c8ccd3; margin-bottom: 4px; }
+  .subj-progress { margin-bottom: 8px; }
   .subj-target-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 10px; }
   .subj-target-grid label { margin-top: 8px; margin-bottom: 3px; font-size: 10px; }
 </style>
@@ -257,6 +273,13 @@
 
       <label>Minutes studied</label>
       <input type="number" id="minutes" min="1" placeholder="e.g. 90">
+      <div class="preset-row">
+        <button type="button" class="preset-btn" onclick="setMinutes(30)">30m</button>
+        <button type="button" class="preset-btn" onclick="setMinutes(45)">45m</button>
+        <button type="button" class="preset-btn" onclick="setMinutes(60)">60m</button>
+        <button type="button" class="preset-btn" onclick="setMinutes(90)">90m</button>
+        <button type="button" class="preset-btn" onclick="setMinutes(120)">120m</button>
+      </div>
 
       <label>Notes (optional)</label>
       <textarea id="notes" placeholder="Anything worth remembering"></textarea>
@@ -285,6 +308,7 @@
         <h2 id="calTitle"></h2>
         <button class="icon-btn cal-nav-btn" onclick="calNextMonth()">›</button>
       </div>
+      <button class="secondary" style="margin-top:0;margin-bottom:12px;" onclick="calGoToday()">Jump to today</button>
       <div class="cal-grid" id="calDow"></div>
       <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
       <div class="legend">
@@ -302,7 +326,9 @@
     <div class="card" id="calDayCard">
       <h2 id="calDayTitle">Select a day</h2>
       <div id="calDayContent" style="font-size:13px;color:#9aa4b2;">Tap a date above to see sessions and targets for that day.</div>
+      <button class="hidden" id="calLogBtn" style="margin-top:12px;" onclick="calLogForSelectedDay()">+ Log session for this date</button>
     </div>
+
   </div>
 
   <!-- ===== TARGETS TAB ===== -->
@@ -326,6 +352,7 @@
     <div id="settingsToast"></div>
 
     <button class="secondary" onclick="downloadBackup()">Download backup (JSON)</button>
+    <button class="secondary" onclick="downloadCSV()">Download sessions (CSV)</button>
 
     <p class="sub" style="margin-top:20px;">Gist ID: <code id="gistIdShown"></code></p>
     <button class="link" onclick="logout()">Use a different token / gist</button>
@@ -435,6 +462,11 @@ async function boot() {
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('gistIdShown').textContent = GIST_ID;
   document.getElementById('date').valueAsDate = new Date();
+  document.getElementById('minutes').addEventListener('input', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent === document.getElementById('minutes').value + 'm');
+    });
+  });
 
   const now = new Date();
   calYear = now.getFullYear();
@@ -507,11 +539,22 @@ function safeSubjId(s) {
 function renderSubjectTargetInputs() {
   const el = document.getElementById('subjectTargetInputs');
   const targets = appData.settings.subjectTargets || {};
+  const subjectMinutes = computeStats().subjectMinutes;
   el.innerHTML = appData.subjects.map(s => {
     const t = targets[s] || {};
     const safe = safeSubjId(s);
+    const loggedHrs = (subjectMinutes[s] || 0) / 60;
+    let progress = '';
+    if (t.hours) {
+      const pct = Math.min(100, Math.round((loggedHrs / t.hours) * 100));
+      progress = `<div class="subj-progress">
+        <div class="bar-track small"><div class="bar-fill small" style="width:${pct}%;"></div></div>
+        <div class="sub-line">${pct}% complete — ${loggedHrs.toFixed(1)}h / ${t.hours}h</div>
+      </div>`;
+    }
     return `<div class="subj-target-block">
       <div class="subj-target-name">${s}</div>
+      ${progress}
       <div class="subj-target-grid">
         <div><label>Total hrs (syllabus)</label><input type="number" min="0" id="${safe}_hours" value="${t.hours || ''}" placeholder="hrs"></div>
         <div><label>Complete syllabus by</label><input type="date" id="${safe}_syllabus" value="${t.syllabusDate || ''}"></div>
@@ -557,6 +600,14 @@ function showSettingsToast(msg, ok) {
   setTimeout(() => t.style.display = 'none', 2500);
 }
 
+// ===== QUICK-LOG PRESETS =====
+function setMinutes(m) {
+  document.getElementById('minutes').value = m;
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === m + 'm');
+  });
+}
+
 // ===== LOGGING =====
 async function submitLog() {
   const btn = document.getElementById('submitBtn');
@@ -580,6 +631,7 @@ async function submitLog() {
     document.getElementById('topic').value = '';
     document.getElementById('minutes').value = '';
     document.getElementById('notes').value = '';
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     showToast('Logged ✓', true);
     render();
   } catch (err) {
@@ -658,6 +710,28 @@ function downloadBackup() {
   const a = document.createElement('a');
   a.href = url;
   a.download = 'ca-tracker-backup-' + localISODate(new Date()) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvEscape(val) {
+  const s = String(val == null ? '' : val);
+  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+
+function downloadCSV() {
+  const rows = [['Date', 'Subject', 'Topic', 'Minutes', 'Notes']];
+  appData.logs
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.ts || '').localeCompare(b.ts || ''))
+    .forEach(l => rows.push([l.date, l.subject, l.topic || '', l.minutes, l.notes || '']));
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ca-tracker-sessions-' + localISODate(new Date()) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -741,6 +815,7 @@ function render() {
   renderUpcomingTargets();
   renderHeatmap(stats.heatmap);
   renderSubjectList(stats);
+  renderSubjectTargetInputs();
   renderLogList();
   renderCalendar();
 }
@@ -909,6 +984,21 @@ function calNextMonth() {
   renderCalendar();
 }
 
+function calGoToday() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  calSelectedDate = localISODate(now);
+  renderCalendar();
+}
+
+function calLogForSelectedDay() {
+  if (!calSelectedDate) return;
+  switchTab('session');
+  document.getElementById('date').value = calSelectedDate;
+  document.getElementById('minutes').focus();
+}
+
 function selectCalDay(dateStr) {
   calSelectedDate = dateStr;
   renderCalendar();
@@ -955,9 +1045,11 @@ function renderCalendar() {
 
   if (calSelectedDate) {
     renderCalDayPanel(calSelectedDate);
+    document.getElementById('calLogBtn').classList.remove('hidden');
   } else {
     document.getElementById('calDayTitle').textContent = 'Select a day';
     document.getElementById('calDayContent').textContent = 'Tap a date above to see sessions and targets for that day.';
+    document.getElementById('calLogBtn').classList.add('hidden');
   }
 }
 
@@ -985,6 +1077,13 @@ function renderCalDayPanel(dateStr) {
     html += '<div style="color:#9aa4b2;">No sessions logged this day.</div>';
   }
   document.getElementById('calDayContent').innerHTML = html;
+}
+
+// ===== PWA: SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* non-fatal */ });
+  });
 }
 </script>
 </body>
