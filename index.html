@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#0f1115" id="themeColorMeta">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CA Tracker">
@@ -11,36 +11,87 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
 <title>CA Final Study Tracker</title>
+<script>
+  // Apply saved theme before first paint to avoid a flash of the wrong theme.
+  (function() {
+    var saved = localStorage.getItem('ca_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+  })();
+</script>
 <style>
+  :root {
+    --bg: #0f1115;
+    --input-bg: #0f1115;
+    --text: #e6e6e6;
+    --card-bg: #171a21;
+    --border: #262a33;
+    --divider: #21262d;
+    --cell-empty: #21262d;
+    --text-secondary: #c8ccd3;
+    --text-muted: #9aa4b2;
+    --input-border: #2c3038;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #7dd3fc;
+    --btn-secondary-bg: #2c3038;
+    --btn-secondary-hover: #374151;
+  }
+  [data-theme="light"] {
+    --bg: #f5f6f8;
+    --input-bg: #eef0f3;
+    --text: #1a1d23;
+    --card-bg: #ffffff;
+    --border: #e2e5ea;
+    --divider: #e5e7eb;
+    --cell-empty: #e2e5ea;
+    --text-secondary: #3a3f4b;
+    --text-muted: #6b7280;
+    --input-border: #d1d5db;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #0284c7;
+    --btn-secondary-bg: #eef0f3;
+    --btn-secondary-hover: #e2e5ea;
+  }
+
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    background: #0f1115;
-    color: #e6e6e6;
+    background: var(--bg);
+    color: var(--text);
     margin: 0;
     padding: 24px;
     max-width: 640px;
     margin-inline: auto;
+    transition: background .2s, color .2s;
   }
   h1 { font-size: 20px; margin: 0 0 20px; }
-  p.sub { color: #9aa4b2; font-size: 13px; margin-top: -14px; margin-bottom: 20px; }
+  p.sub { color: var(--text-muted); font-size: 13px; margin-top: -14px; margin-bottom: 20px; }
+
+  .theme-toggle-btn {
+    position: fixed; top: 14px; right: 14px; z-index: 50;
+    width: auto; margin-top: 0; padding: 6px 12px; font-size: 12px;
+    background: var(--btn-secondary-bg); color: var(--text); border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+  .theme-toggle-btn:hover { background: var(--btn-secondary-hover); }
 
   .card {
-    background: #171a21;
-    border: 1px solid #262a33;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 10px;
     padding: 16px;
     margin-bottom: 20px;
   }
-  .card h2 { font-size: 14px; margin: 0 0 12px; color: #c8ccd3; }
+  .card h2 { font-size: 14px; margin: 0 0 12px; color: var(--text-secondary); }
 
-  label { display: block; font-size: 12px; color: #9aa4b2; margin-bottom: 4px; margin-top: 10px; }
+  label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; margin-top: 10px; }
   input, select, textarea {
     width: 100%;
-    background: #0f1115;
-    border: 1px solid #2c3038;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 6px;
-    color: #e6e6e6;
+    color: var(--text);
     padding: 8px;
     font-size: 14px;
   }
@@ -48,7 +99,7 @@
   button {
     margin-top: 14px;
     width: 100%;
-    background: #2563eb;
+    background: var(--accent);
     border: none;
     color: white;
     padding: 10px;
@@ -57,12 +108,12 @@
     font-weight: 600;
     cursor: pointer;
   }
-  button:hover { background: #1d4ed8; }
+  button:hover { background: var(--accent-hover); }
   button:disabled { background: #374151; cursor: not-allowed; }
-  button.secondary { background: #2c3038; }
-  button.secondary:hover { background: #374151; }
+  button.secondary { background: var(--btn-secondary-bg); color: var(--text); }
+  button.secondary:hover { background: var(--btn-secondary-hover); }
   button.link {
-    background: none; color: #7dd3fc; width: auto; padding: 0;
+    background: none; color: var(--accent-light); width: auto; padding: 0;
     font-weight: 400; font-size: 12px; text-decoration: underline; margin-top: 16px;
   }
 
@@ -77,36 +128,36 @@
 
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
   .stats.two { grid-template-columns: repeat(2, 1fr); margin-bottom: 20px; }
-  .stat-box { background: #171a21; border: 1px solid #262a33; border-radius: 10px; padding: 12px; text-align: center; }
-  .stat-box .val { font-size: 22px; font-weight: 700; color: #7dd3fc; }
-  .stat-box .label { font-size: 11px; color: #9aa4b2; margin-top: 4px; }
+  .stat-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-box .val { font-size: 22px; font-weight: 700; color: var(--accent-light); }
+  .stat-box .label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
   #examBanner {
-    background: #171a21; border: 1px solid #262a33; border-radius: 8px;
-    padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #7dd3fc;
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--accent-light);
   }
 
-  .bar-track { background: #0f1115; border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar-track { background: var(--input-bg); border-radius: 6px; height: 10px; overflow: hidden; }
   .bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width .3s; }
   .bar-track.small { height: 6px; margin-top: 4px; }
-  .bar-fill.small { background: #7dd3fc; }
+  .bar-fill.small { background: var(--accent-light); }
 
   .heatmap-scroll { overflow-x: auto; padding-bottom: 6px; }
   .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; }
-  .cell { width: 12px; height: 12px; border-radius: 2px; background: #21262d; }
-  .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #9aa4b2; margin-top: 8px; flex-wrap: wrap; }
+  .cell { width: 12px; height: 12px; border-radius: 2px; background: var(--cell-empty); }
+  .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-muted); margin-top: 8px; flex-wrap: wrap; }
   .legend .cell { width: 10px; height: 10px; }
 
-  .subject-row { padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
+  .subject-row { padding: 8px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
   .subject-row:last-child { border-bottom: none; }
   .subject-row .top-line { display: flex; justify-content: space-between; }
-  .subject-row .sub-line { font-size: 10px; color: #9aa4b2; margin-top: 2px; }
+  .subject-row .sub-line { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
 
-  .log-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
+  .log-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
   .log-row:last-child { border-bottom: none; }
   .log-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .icon-btn { background: #2c3038; border: none; color: #e6e6e6; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
-  .icon-btn:hover { background: #374151; }
+  .icon-btn { background: var(--btn-secondary-bg); border: none; color: var(--text); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .icon-btn:hover { background: var(--btn-secondary-hover); }
   .icon-btn.danger { background: #5c1e1e; color: #fecaca; }
   .icon-btn.danger:hover { background: #7f1d1d; }
 
@@ -114,30 +165,30 @@
   .filter-row > * { flex: 1; min-width: 110px; }
 
   .target-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
-  .target-row span { flex: 1; font-size: 12px; color: #c8ccd3; }
+  .target-row span { flex: 1; font-size: 12px; color: var(--text-secondary); }
   .target-row input { width: 80px; }
 
   .preset-row { display: flex; gap: 6px; margin-top: 8px; }
   .preset-btn {
-    flex: 1; margin-top: 0; background: #2c3038; border: none; color: #c8ccd3;
+    flex: 1; margin-top: 0; background: var(--btn-secondary-bg); border: none; color: var(--text-secondary);
     padding: 8px 0; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
   }
-  .preset-btn:hover { background: #374151; }
-  .preset-btn.active { background: #2563eb; color: #fff; }
+  .preset-btn:hover { background: var(--btn-secondary-hover); }
+  .preset-btn.active { background: var(--accent); color: #fff; }
 
   .hidden { display: none; }
-  code { background: #0f1115; padding: 2px 5px; border-radius: 4px; font-size: 12px; }
-  a { color: #7dd3fc; }
+  code { background: var(--input-bg); padding: 2px 5px; border-radius: 4px; font-size: 12px; color: var(--text); }
+  a { color: var(--accent-light); }
 
   /* ===== TABS ===== */
-  .tabbar { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid #262a33; }
+  .tabbar { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
   .tab-btn {
-    flex: 1; margin-top: 0; background: none; border: none; color: #9aa4b2;
+    flex: 1; margin-top: 0; background: none; border: none; color: var(--text-muted);
     padding: 10px 2px; font-size: 12px; font-weight: 600; cursor: pointer;
     border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap;
   }
-  .tab-btn:hover { background: none; color: #c8ccd3; }
-  .tab-btn.active { color: #7dd3fc; border-bottom-color: #7dd3fc; }
+  .tab-btn:hover { background: none; color: var(--text-secondary); }
+  .tab-btn.active { color: var(--accent-light); border-bottom-color: var(--accent-light); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
@@ -146,14 +197,14 @@
   .cal-header h2 { margin: 0; }
   .cal-nav-btn { margin-top: 0; width: 36px; padding: 8px 0; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal-dow { font-size: 10px; color: #9aa4b2; text-align: center; padding-bottom: 6px; }
+  .cal-dow { font-size: 10px; color: var(--text-muted); text-align: center; padding-bottom: 6px; }
   .cal-cell {
-    aspect-ratio: 1; border-radius: 6px; background: #21262d;
+    aspect-ratio: 1; border-radius: 6px; background: var(--cell-empty);
     display: flex; align-items: flex-start; justify-content: flex-start;
     padding: 4px; font-size: 11px; cursor: pointer; position: relative; color: #0f1115;
   }
   .cal-cell.empty { background: none; cursor: default; }
-  .cal-cell.today { box-shadow: inset 0 0 0 1px #7dd3fc; }
+  .cal-cell.today { box-shadow: inset 0 0 0 1px var(--accent-light); }
   .cal-cell.selected { box-shadow: inset 0 0 0 2px #4ade80; }
   .cal-cell .dnum { font-weight: 700; color: #e6e6e6; mix-blend-mode: difference; }
   .cal-cell .tgt-dot {
@@ -166,15 +217,17 @@
   }
 
   /* ===== TARGETS: per-subject block ===== */
-  .subj-target-block { padding: 12px 0; border-bottom: 1px solid #21262d; }
+  .subj-target-block { padding: 12px 0; border-bottom: 1px solid var(--divider); }
   .subj-target-block:last-child { border-bottom: none; }
-  .subj-target-name { font-size: 13px; font-weight: 600; color: #c8ccd3; margin-bottom: 4px; }
+  .subj-target-name { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
   .subj-progress { margin-bottom: 8px; }
   .subj-target-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 10px; }
   .subj-target-grid label { margin-top: 8px; margin-bottom: 3px; font-size: 10px; }
 </style>
 </head>
 <body>
+
+<button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()">☀️ Light</button>
 
 <!-- SETUP SCREEN -->
 <div id="setupScreen">
@@ -183,7 +236,7 @@
 
   <div class="card">
     <h2>1. Personal access token</h2>
-    <p style="font-size:12px;color:#9aa4b2;margin-top:0;">
+    <p style="font-size:12px;color:var(--text-muted);margin-top:0;">
       GitHub → Settings → Developer settings →
       <a href="https://github.com/settings/tokens/new?scopes=gist&description=CA%20Tracker" target="_blank">Personal access tokens (classic)</a>
       → New token → tick only the <code>gist</code> scope → Generate. Paste it below (kept only in this browser's local storage, sent only to api.github.com).
@@ -229,7 +282,7 @@
 
     <div class="card hidden" id="targetCard">
       <h2>Today's target</h2>
-      <div id="targetText" style="font-size:13px;color:#9aa4b2;margin-bottom:8px;"></div>
+      <div id="targetText" style="font-size:13px;color:var(--text-muted);margin-bottom:8px;"></div>
       <div class="bar-track"><div class="bar-fill" id="targetBar"></div></div>
     </div>
 
@@ -243,7 +296,7 @@
       <div class="heatmap-scroll"><div class="heatmap" id="heatmap"></div></div>
       <div class="legend">
         Less
-        <div class="cell" style="background:#21262d"></div>
+        <div class="cell" style="background:var(--cell-empty)"></div>
         <div class="cell" style="background:#123d29"></div>
         <div class="cell" style="background:#1a5c3a"></div>
         <div class="cell" style="background:#2e9e5b"></div>
@@ -313,7 +366,7 @@
       <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
       <div class="legend">
         Less
-        <div class="cell" style="background:#21262d"></div>
+        <div class="cell" style="background:var(--cell-empty)"></div>
         <div class="cell" style="background:#123d29"></div>
         <div class="cell" style="background:#1a5c3a"></div>
         <div class="cell" style="background:#2e9e5b"></div>
@@ -325,7 +378,7 @@
 
     <div class="card" id="calDayCard">
       <h2 id="calDayTitle">Select a day</h2>
-      <div id="calDayContent" style="font-size:13px;color:#9aa4b2;">Tap a date above to see sessions and targets for that day.</div>
+      <div id="calDayContent" style="font-size:13px;color:var(--text-muted);">Tap a date above to see sessions and targets for that day.</div>
       <button class="hidden" id="calLogBtn" style="margin-top:12px;" onclick="calLogForSelectedDay()">+ Log session for this date</button>
     </div>
 
@@ -344,7 +397,7 @@
 
     <div class="card">
       <h2>Per-subject targets</h2>
-      <p style="font-size:12px;color:#9aa4b2;margin-top:0;">Set a total-hours target, plus the dates you want to finish the syllabus and each revision, for every subject.</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:0;">Set a total-hours target, plus the dates you want to finish the syllabus and each revision, for every subject.</p>
       <div id="subjectTargetInputs"></div>
     </div>
 
@@ -395,6 +448,24 @@ function localISODate(d) {
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
+
+// ===== THEME =====
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('ca_theme', theme);
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = theme === 'light' ? '🌙 Dark' : '☀️ Light';
+  const meta = document.getElementById('themeColorMeta');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#f5f6f8' : '#0f1115');
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// initialize the toggle button label to match the theme applied before first paint
+applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 
 // ===== TABS =====
 function switchTab(tab) {
@@ -912,7 +983,7 @@ function renderHeatmap(heatmap) {
 }
 
 function colorFor(mins) {
-  if (mins <= 0) return '#21262d';
+  if (mins <= 0) return 'var(--cell-empty)';
   if (mins < 30) return '#123d29';
   if (mins < 60) return '#1a5c3a';
   if (mins < 120) return '#2e9e5b';
@@ -961,7 +1032,7 @@ function renderLogList() {
     <div class="log-row" id="row_${r.id}">
       <div>
         <div><strong>${r.date}</strong> · ${r.subject} · ${r.minutes}m</div>
-        <div style="color:#9aa4b2;font-size:12px;">${r.topic || ''}${r.topic && r.notes ? ' — ' : ''}${r.notes || ''}</div>
+        <div style="color:var(--text-muted);font-size:12px;">${r.topic || ''}${r.topic && r.notes ? ' — ' : ''}${r.notes || ''}</div>
       </div>
       <div class="log-row-actions">
         <button class="icon-btn" onclick="startEdit('${r.id}')">Edit</button>
@@ -1061,7 +1132,7 @@ function renderCalDayPanel(dateStr) {
   const targetDates = collectTargetDates();
   const dayTargets = targetDates[dateStr] || [];
 
-  let html = `<div style="color:#e6e6e6;margin-bottom:8px;">${(totalMin / 60).toFixed(1)}h logged</div>`;
+  let html = `<div style="color:var(--text);margin-bottom:8px;">${(totalMin / 60).toFixed(1)}h logged</div>`;
   if (dayTargets.length) {
     html += `<div style="color:#facc15;margin-bottom:10px;">🎯 ${dayTargets.join(' · ')}</div>`;
   }
@@ -1070,11 +1141,11 @@ function renderCalDayPanel(dateStr) {
       <div class="log-row">
         <div>
           <div><strong>${l.subject}</strong> · ${l.minutes}m</div>
-          <div style="color:#9aa4b2;font-size:12px;">${l.topic || ''}${l.topic && l.notes ? ' — ' : ''}${l.notes || ''}</div>
+          <div style="color:var(--text-muted);font-size:12px;">${l.topic || ''}${l.topic && l.notes ? ' — ' : ''}${l.notes || ''}</div>
         </div>
       </div>`).join('');
   } else {
-    html += '<div style="color:#9aa4b2;">No sessions logged this day.</div>';
+    html += '<div style="color:var(--text-muted);">No sessions logged this day.</div>';
   }
   document.getElementById('calDayContent').innerHTML = html;
 }
