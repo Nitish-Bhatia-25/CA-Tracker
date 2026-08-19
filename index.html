@@ -12,7 +12,6 @@
 <link rel="icon" href="icon-192.png">
 <title>CA Final Study Tracker</title>
 <script>
-  // Apply saved theme before first paint to avoid a flash of the wrong theme.
   (function() {
     var saved = localStorage.getItem('ca_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
@@ -180,7 +179,6 @@
   code { background: var(--input-bg); padding: 2px 5px; border-radius: 4px; font-size: 12px; color: var(--text); }
   a { color: var(--accent-light); }
 
-  /* ===== TABS ===== */
   .tabbar { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
   .tab-btn {
     flex: 1; margin-top: 0; background: none; border: none; color: var(--text-muted);
@@ -192,7 +190,6 @@
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
 
-  /* ===== CALENDAR ===== */
   .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .cal-header h2 { margin: 0; }
   .cal-nav-btn { margin-top: 0; width: 36px; padding: 8px 0; }
@@ -216,7 +213,6 @@
     background: #facc15; margin-right: 2px;
   }
 
-  /* ===== TARGETS: per-subject block ===== */
   .subj-target-block { padding: 12px 0; border-bottom: 1px solid var(--divider); }
   .subj-target-block:last-child { border-bottom: none; }
   .subj-target-name { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
@@ -229,7 +225,6 @@
 
 <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()">☀️ Light</button>
 
-<!-- SETUP SCREEN -->
 <div id="setupScreen">
   <h1>📚 CA Final Study Tracker</h1>
   <p class="sub">One-time setup on this device. Your data lives in a private GitHub Gist, so any device that logs in here sees the same data.</p>
@@ -254,7 +249,6 @@
   </div>
 </div>
 
-<!-- APP SCREEN -->
 <div id="app" class="hidden">
   <h1>📚 CA Final Study Tracker</h1>
 
@@ -265,7 +259,6 @@
     <button class="tab-btn" data-tab="targets" onclick="switchTab('targets')">Targets</button>
   </div>
 
-  <!-- ===== SUMMARY TAB ===== -->
   <div class="tab-panel active" id="tab-summary">
     <div id="examBanner" class="hidden"></div>
 
@@ -311,7 +304,6 @@
     </div>
   </div>
 
-  <!-- ===== SESSION TAB ===== -->
   <div class="tab-panel" id="tab-session">
     <div class="card">
       <h2>Log a session</h2>
@@ -324,14 +316,21 @@
       <label>Topic (optional)</label>
       <input type="text" id="topic" placeholder="e.g. Ind AS 116">
 
-      <label>Minutes studied</label>
-      <input type="number" id="minutes" min="1" placeholder="e.g. 90">
+      <label>Time studied</label>
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1;">
+          <input type="number" id="hoursInput" min="0" max="24" placeholder="Hours">
+        </div>
+        <div style="flex:1;">
+          <input type="number" id="minsInput" min="0" max="59" placeholder="Minutes">
+        </div>
+      </div>
       <div class="preset-row">
-        <button type="button" class="preset-btn" onclick="setMinutes(30)">30m</button>
-        <button type="button" class="preset-btn" onclick="setMinutes(45)">45m</button>
-        <button type="button" class="preset-btn" onclick="setMinutes(60)">60m</button>
-        <button type="button" class="preset-btn" onclick="setMinutes(90)">90m</button>
-        <button type="button" class="preset-btn" onclick="setMinutes(120)">120m</button>
+        <button type="button" class="preset-btn" data-mins="30" onclick="setMinutes(30)">30m</button>
+        <button type="button" class="preset-btn" data-mins="45" onclick="setMinutes(45)">45m</button>
+        <button type="button" class="preset-btn" data-mins="60" onclick="setMinutes(60)">1h</button>
+        <button type="button" class="preset-btn" data-mins="90" onclick="setMinutes(90)">1h 30m</button>
+        <button type="button" class="preset-btn" data-mins="120" onclick="setMinutes(120)">2h</button>
       </div>
 
       <label>Notes (optional)</label>
@@ -353,7 +352,6 @@
     </div>
   </div>
 
-  <!-- ===== CALENDAR TAB ===== -->
   <div class="tab-panel" id="tab-calendar">
     <div class="card">
       <div class="cal-header">
@@ -384,7 +382,6 @@
 
   </div>
 
-  <!-- ===== TARGETS TAB ===== -->
   <div class="tab-panel" id="tab-targets">
     <div class="card">
       <h2>Overall targets</h2>
@@ -449,7 +446,23 @@ function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// ===== THEME =====
+function validateEntry(entry, excludeId) {
+  if (!entry.date || !entry.subject || !entry.minutes) return 'Fill date, subject and minutes.';
+  if (entry.minutes <= 0) return 'Minutes must be greater than 0.';
+  if (entry.minutes > 1440) return 'A single session can\'t exceed 1440 minutes (24 hours).';
+  if (entry.date > localISODate(new Date())) return 'You can\'t log a session for a future date.';
+
+  const existingToday = appData.logs
+    .filter(l => l.date === entry.date && l.id !== excludeId)
+    .reduce((s, l) => s + l.minutes, 0);
+  const dayTotal = existingToday + entry.minutes;
+  if (dayTotal > 1440) {
+    const remaining = Math.max(0, 1440 - existingToday);
+    return `That would put ${entry.date} at ${(dayTotal / 60).toFixed(1)}h, more than 24h in a day. You have ${(remaining / 60).toFixed(1)}h left for that date.`;
+  }
+  return null;
+}
+
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('ca_theme', theme);
@@ -464,17 +477,14 @@ function toggleTheme() {
   applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-// initialize the toggle button label to match the theme applied before first paint
 applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
 
-// ===== TABS =====
 function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
   if (tab === 'calendar') renderCalendar();
 }
 
-// ===== SETUP / AUTH =====
 window.addEventListener('DOMContentLoaded', () => {
   if (PAT && GIST_ID) boot();
 });
@@ -533,9 +543,13 @@ async function boot() {
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('gistIdShown').textContent = GIST_ID;
   document.getElementById('date').valueAsDate = new Date();
-  document.getElementById('minutes').addEventListener('input', () => {
-    document.querySelectorAll('.preset-btn').forEach(b => {
-      b.classList.toggle('active', b.textContent === document.getElementById('minutes').value + 'm');
+  document.getElementById('date').max = localISODate(new Date());
+  ['hoursInput', 'minsInput'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const mins = getMinutesFromInputs();
+      document.querySelectorAll('.preset-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mins === String(mins));
+      });
     });
   });
 
@@ -545,7 +559,6 @@ async function boot() {
 
   await fetchGist();
 
-  // migrate older data that predates ids/settings/date-targets
   let migrated = false;
   appData.logs.forEach(l => { if (!l.id) { l.id = genId(); migrated = true; } });
   if (!appData.settings) { appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} }; migrated = true; }
@@ -566,7 +579,6 @@ async function boot() {
   render();
 }
 
-// ===== DATA (GIST) =====
 async function fetchGist() {
   const res = await fetch(`${API}/gists/${GIST_ID}`, { headers: ghHeaders() });
   if (!res.ok) { showToast('Failed to load data from GitHub.', false); return; }
@@ -671,15 +683,24 @@ function showSettingsToast(msg, ok) {
   setTimeout(() => t.style.display = 'none', 2500);
 }
 
-// ===== QUICK-LOG PRESETS =====
+function getMinutesFromInputs() {
+  const h = Number(document.getElementById('hoursInput').value) || 0;
+  const m = Number(document.getElementById('minsInput').value) || 0;
+  return h * 60 + m;
+}
+
+function setMinutesInputs(totalMins) {
+  document.getElementById('hoursInput').value = Math.floor(totalMins / 60) || '';
+  document.getElementById('minsInput').value = totalMins % 60 || '';
+}
+
 function setMinutes(m) {
-  document.getElementById('minutes').value = m;
+  setMinutesInputs(m);
   document.querySelectorAll('.preset-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent === m + 'm');
+    b.classList.toggle('active', b.dataset.mins === String(m));
   });
 }
 
-// ===== LOGGING =====
 async function submitLog() {
   const btn = document.getElementById('submitBtn');
   const entry = {
@@ -687,12 +708,13 @@ async function submitLog() {
     date: document.getElementById('date').value,
     subject: document.getElementById('subject').value,
     topic: document.getElementById('topic').value,
-    minutes: Number(document.getElementById('minutes').value),
+    minutes: getMinutesFromInputs(),
     notes: document.getElementById('notes').value,
     ts: new Date().toISOString()
   };
-  if (!entry.date || !entry.subject || !entry.minutes) {
-    showToast('Fill date, subject and minutes.', false);
+  const err = validateEntry(entry, null);
+  if (err) {
+    showToast(err, false);
     return;
   }
   btn.disabled = true;
@@ -700,14 +722,15 @@ async function submitLog() {
     appData.logs.push(entry);
     await saveGist();
     document.getElementById('topic').value = '';
-    document.getElementById('minutes').value = '';
+    document.getElementById('hoursInput').value = '';
+    document.getElementById('minsInput').value = '';
     document.getElementById('notes').value = '';
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     showToast('Logged ✓', true);
     render();
-  } catch (err) {
+  } catch (err2) {
     appData.logs.pop();
-    showToast(err.message, false);
+    showToast(err2.message, false);
   } finally {
     btn.disabled = false;
   }
@@ -722,7 +745,6 @@ function showToast(msg, ok) {
   setTimeout(() => t.style.display = 'none', 2500);
 }
 
-// ===== EDIT / DELETE =====
 function startEdit(id) {
   const entry = appData.logs.find(l => l.id === id);
   if (!entry) return;
@@ -730,11 +752,12 @@ function startEdit(id) {
   row.innerHTML = `
     <div style="width:100%;">
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <input type="date" id="edit_date_${id}" value="${entry.date}" style="flex:1;min-width:120px;">
+        <input type="date" id="edit_date_${id}" value="${entry.date}" max="${localISODate(new Date())}" style="flex:1;min-width:120px;">
         <select id="edit_subject_${id}" style="flex:1;min-width:140px;">
           ${appData.subjects.map(s => `<option value="${s}" ${s === entry.subject ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
-        <input type="number" id="edit_minutes_${id}" value="${entry.minutes}" style="width:80px;">
+        <input type="number" id="edit_hours_${id}" value="${Math.floor(entry.minutes / 60) || ''}" min="0" max="24" placeholder="Hours" style="width:80px;">
+        <input type="number" id="edit_mins_${id}" value="${entry.minutes % 60 || ''}" min="0" max="59" placeholder="Minutes" style="width:80px;">
       </div>
       <input type="text" id="edit_topic_${id}" value="${entry.topic || ''}" placeholder="Topic" style="margin-top:6px;">
       <textarea id="edit_notes_${id}" placeholder="Notes" style="margin-top:6px;">${entry.notes || ''}</textarea>
@@ -748,16 +771,29 @@ function startEdit(id) {
 async function saveEdit(id) {
   const entry = appData.logs.find(l => l.id === id);
   if (!entry) return;
-  entry.date = document.getElementById('edit_date_' + id).value;
-  entry.subject = document.getElementById('edit_subject_' + id).value;
-  entry.minutes = Number(document.getElementById('edit_minutes_' + id).value) || entry.minutes;
-  entry.topic = document.getElementById('edit_topic_' + id).value;
-  entry.notes = document.getElementById('edit_notes_' + id).value;
+  const backup = { ...entry };
+
+  const candidate = {
+    date: document.getElementById('edit_date_' + id).value,
+    subject: document.getElementById('edit_subject_' + id).value,
+    minutes: (Number(document.getElementById('edit_hours_' + id).value) || 0) * 60 + (Number(document.getElementById('edit_mins_' + id).value) || 0),
+    topic: document.getElementById('edit_topic_' + id).value,
+    notes: document.getElementById('edit_notes_' + id).value
+  };
+  const err = validateEntry(candidate, id);
+  if (err) { showToast(err, false); return; }
+
+  entry.date = candidate.date;
+  entry.subject = candidate.subject;
+  entry.minutes = candidate.minutes;
+  entry.topic = candidate.topic;
+  entry.notes = candidate.notes;
   try {
     await saveGist();
     render();
-  } catch (err) {
-    showToast(err.message, false);
+  } catch (saveErr) {
+    Object.assign(entry, backup);
+    showToast(saveErr.message, false);
   }
 }
 
@@ -774,7 +810,6 @@ async function deleteLog(id) {
   }
 }
 
-// ===== BACKUP =====
 function downloadBackup() {
   const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -807,7 +842,6 @@ function downloadCSV() {
   URL.revokeObjectURL(url);
 }
 
-// ===== STATS / RENDER =====
 function todayMinutes() {
   const today = localISODate(new Date());
   return appData.logs.filter(l => l.date === today).reduce((s, l) => s + l.minutes, 0);
@@ -916,7 +950,6 @@ function renderTargetCard() {
 }
 
 function collectTargetDates() {
-  // returns { 'YYYY-MM-DD': [ 'Subject — Label', ... ] }
   const targets = appData.settings.subjectTargets || {};
   const map = {};
   Object.keys(targets).forEach(s => {
@@ -1042,7 +1075,6 @@ function renderLogList() {
   `).join('');
 }
 
-// ===== CALENDAR =====
 function calPrevMonth() {
   calMonth--;
   if (calMonth < 0) { calMonth = 11; calYear--; }
@@ -1067,7 +1099,7 @@ function calLogForSelectedDay() {
   if (!calSelectedDate) return;
   switchTab('session');
   document.getElementById('date').value = calSelectedDate;
-  document.getElementById('minutes').focus();
+  document.getElementById('hoursInput').focus();
 }
 
 function selectCalDay(dateStr) {
@@ -1116,7 +1148,7 @@ function renderCalendar() {
 
   if (calSelectedDate) {
     renderCalDayPanel(calSelectedDate);
-    document.getElementById('calLogBtn').classList.remove('hidden');
+    document.getElementById('calLogBtn').classList.toggle('hidden', calSelectedDate > todayStr);
   } else {
     document.getElementById('calDayTitle').textContent = 'Select a day';
     document.getElementById('calDayContent').textContent = 'Tap a date above to see sessions and targets for that day.';
@@ -1150,7 +1182,6 @@ function renderCalDayPanel(dateStr) {
   document.getElementById('calDayContent').innerHTML = html;
 }
 
-// ===== PWA: SERVICE WORKER =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => { /* non-fatal */ });
