@@ -87,7 +87,7 @@
   .heatmap-scroll { overflow-x: auto; padding-bottom: 6px; }
   .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; }
   .cell { width: 12px; height: 12px; border-radius: 2px; background: #21262d; }
-  .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #9aa4b2; margin-top: 8px; }
+  .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #9aa4b2; margin-top: 8px; flex-wrap: wrap; }
   .legend .cell { width: 10px; height: 10px; }
 
   .subject-row { padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
@@ -113,6 +113,49 @@
   .hidden { display: none; }
   code { background: #0f1115; padding: 2px 5px; border-radius: 4px; font-size: 12px; }
   a { color: #7dd3fc; }
+
+  /* ===== TABS ===== */
+  .tabbar { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid #262a33; }
+  .tab-btn {
+    flex: 1; margin-top: 0; background: none; border: none; color: #9aa4b2;
+    padding: 10px 2px; font-size: 12px; font-weight: 600; cursor: pointer;
+    border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap;
+  }
+  .tab-btn:hover { background: none; color: #c8ccd3; }
+  .tab-btn.active { color: #7dd3fc; border-bottom-color: #7dd3fc; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ===== CALENDAR ===== */
+  .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .cal-header h2 { margin: 0; }
+  .cal-nav-btn { margin-top: 0; width: 36px; padding: 8px 0; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { font-size: 10px; color: #9aa4b2; text-align: center; padding-bottom: 6px; }
+  .cal-cell {
+    aspect-ratio: 1; border-radius: 6px; background: #21262d;
+    display: flex; align-items: flex-start; justify-content: flex-start;
+    padding: 4px; font-size: 11px; cursor: pointer; position: relative; color: #0f1115;
+  }
+  .cal-cell.empty { background: none; cursor: default; }
+  .cal-cell.today { box-shadow: inset 0 0 0 1px #7dd3fc; }
+  .cal-cell.selected { box-shadow: inset 0 0 0 2px #4ade80; }
+  .cal-cell .dnum { font-weight: 700; color: #e6e6e6; mix-blend-mode: difference; }
+  .cal-cell .tgt-dot {
+    position: absolute; top: 4px; right: 4px; width: 6px; height: 6px;
+    border-radius: 50%; background: #facc15;
+  }
+  .tgt-dot-legend {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: #facc15; margin-right: 2px;
+  }
+
+  /* ===== TARGETS: per-subject block ===== */
+  .subj-target-block { padding: 12px 0; border-bottom: 1px solid #21262d; }
+  .subj-target-block:last-child { border-bottom: none; }
+  .subj-target-name { font-size: 13px; font-weight: 600; color: #c8ccd3; margin-bottom: 4px; }
+  .subj-target-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 10px; }
+  .subj-target-grid label { margin-top: 8px; margin-bottom: 3px; font-size: 10px; }
 </style>
 </head>
 <body>
@@ -146,95 +189,147 @@
 <div id="app" class="hidden">
   <h1>📚 CA Final Study Tracker</h1>
 
-  <div id="examBanner" class="hidden"></div>
-
-  <div class="stats">
-    <div class="stat-box"><div class="val" id="statStreak">–</div><div class="label">Current streak</div></div>
-    <div class="stat-box"><div class="val" id="statLongest">–</div><div class="label">Longest streak</div></div>
-    <div class="stat-box"><div class="val" id="statHours">–</div><div class="label">Total hours</div></div>
-    <div class="stat-box"><div class="val" id="statDays">–</div><div class="label">Days logged</div></div>
-  </div>
-  <div class="stats two">
-    <div class="stat-box"><div class="val" id="statWeek">–</div><div class="label">This week</div></div>
-    <div class="stat-box"><div class="val" id="statMonth">–</div><div class="label">This month</div></div>
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="summary" onclick="switchTab('summary')">Summary</button>
+    <button class="tab-btn" data-tab="session" onclick="switchTab('session')">Session</button>
+    <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
+    <button class="tab-btn" data-tab="targets" onclick="switchTab('targets')">Targets</button>
   </div>
 
-  <div class="card hidden" id="targetCard">
-    <h2>Today's target</h2>
-    <div id="targetText" style="font-size:13px;color:#9aa4b2;margin-bottom:8px;"></div>
-    <div class="bar-track"><div class="bar-fill" id="targetBar"></div></div>
-  </div>
+  <!-- ===== SUMMARY TAB ===== -->
+  <div class="tab-panel active" id="tab-summary">
+    <div id="examBanner" class="hidden"></div>
 
-  <div class="card">
-    <h2>Log a session</h2>
-    <label>Date</label>
-    <input type="date" id="date">
+    <div class="stats">
+      <div class="stat-box"><div class="val" id="statStreak">–</div><div class="label">Current streak</div></div>
+      <div class="stat-box"><div class="val" id="statLongest">–</div><div class="label">Longest streak</div></div>
+      <div class="stat-box"><div class="val" id="statHours">–</div><div class="label">Total hours</div></div>
+      <div class="stat-box"><div class="val" id="statDays">–</div><div class="label">Days logged</div></div>
+    </div>
+    <div class="stats two">
+      <div class="stat-box"><div class="val" id="statWeek">–</div><div class="label">This week</div></div>
+      <div class="stat-box"><div class="val" id="statMonth">–</div><div class="label">This month</div></div>
+    </div>
 
-    <label>Subject</label>
-    <select id="subject"></select>
+    <div class="card hidden" id="targetCard">
+      <h2>Today's target</h2>
+      <div id="targetText" style="font-size:13px;color:#9aa4b2;margin-bottom:8px;"></div>
+      <div class="bar-track"><div class="bar-fill" id="targetBar"></div></div>
+    </div>
 
-    <label>Topic (optional)</label>
-    <input type="text" id="topic" placeholder="e.g. Ind AS 116">
+    <div class="card">
+      <h2>Upcoming targets</h2>
+      <div id="upcomingTargetsList"></div>
+    </div>
 
-    <label>Minutes studied</label>
-    <input type="number" id="minutes" min="1" placeholder="e.g. 90">
+    <div class="card">
+      <h2>Last 26 weeks</h2>
+      <div class="heatmap-scroll"><div class="heatmap" id="heatmap"></div></div>
+      <div class="legend">
+        Less
+        <div class="cell" style="background:#21262d"></div>
+        <div class="cell" style="background:#123d29"></div>
+        <div class="cell" style="background:#1a5c3a"></div>
+        <div class="cell" style="background:#2e9e5b"></div>
+        <div class="cell" style="background:#4ade80"></div>
+        More
+      </div>
+    </div>
 
-    <label>Notes (optional)</label>
-    <textarea id="notes" placeholder="Anything worth remembering"></textarea>
-
-    <button id="submitBtn" onclick="submitLog()">Log session</button>
-    <div id="toast"></div>
-  </div>
-
-  <div class="card">
-    <h2>Last 26 weeks</h2>
-    <div class="heatmap-scroll"><div class="heatmap" id="heatmap"></div></div>
-    <div class="legend">
-      Less
-      <div class="cell" style="background:#21262d"></div>
-      <div class="cell" style="background:#123d29"></div>
-      <div class="cell" style="background:#1a5c3a"></div>
-      <div class="cell" style="background:#2e9e5b"></div>
-      <div class="cell" style="background:#4ade80"></div>
-      More
+    <div class="card">
+      <h2>Time by subject</h2>
+      <div id="subjectList"></div>
     </div>
   </div>
 
-  <div class="card">
-    <h2>Time by subject</h2>
-    <div id="subjectList"></div>
-  </div>
+  <!-- ===== SESSION TAB ===== -->
+  <div class="tab-panel" id="tab-session">
+    <div class="card">
+      <h2>Log a session</h2>
+      <label>Date</label>
+      <input type="date" id="date">
 
-  <div class="card">
-    <h2>Recent sessions</h2>
-    <div class="filter-row">
-      <select id="filterSubject"></select>
-      <input type="date" id="filterFrom" title="From">
-      <input type="date" id="filterTo" title="To">
+      <label>Subject</label>
+      <select id="subject"></select>
+
+      <label>Topic (optional)</label>
+      <input type="text" id="topic" placeholder="e.g. Ind AS 116">
+
+      <label>Minutes studied</label>
+      <input type="number" id="minutes" min="1" placeholder="e.g. 90">
+
+      <label>Notes (optional)</label>
+      <textarea id="notes" placeholder="Anything worth remembering"></textarea>
+
+      <button id="submitBtn" onclick="submitLog()">Log session</button>
+      <div id="toast"></div>
     </div>
-    <button class="secondary" style="margin-top:0;" onclick="renderLogList()">Apply filter</button>
-    <div id="logList" style="margin-top:12px;"></div>
+
+    <div class="card">
+      <h2>Recent sessions</h2>
+      <div class="filter-row">
+        <select id="filterSubject"></select>
+        <input type="date" id="filterFrom" title="From">
+        <input type="date" id="filterTo" title="To">
+      </div>
+      <button class="secondary" style="margin-top:0;" onclick="renderLogList()">Apply filter</button>
+      <div id="logList" style="margin-top:12px;"></div>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Targets & settings</h2>
-    <label>Daily study target (minutes)</label>
-    <input type="number" id="dailyTargetInput" min="0" placeholder="e.g. 360">
+  <!-- ===== CALENDAR TAB ===== -->
+  <div class="tab-panel" id="tab-calendar">
+    <div class="card">
+      <div class="cal-header">
+        <button class="icon-btn cal-nav-btn" onclick="calPrevMonth()">‹</button>
+        <h2 id="calTitle"></h2>
+        <button class="icon-btn cal-nav-btn" onclick="calNextMonth()">›</button>
+      </div>
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
+      <div class="legend">
+        Less
+        <div class="cell" style="background:#21262d"></div>
+        <div class="cell" style="background:#123d29"></div>
+        <div class="cell" style="background:#1a5c3a"></div>
+        <div class="cell" style="background:#2e9e5b"></div>
+        <div class="cell" style="background:#4ade80"></div>
+        More
+        <span style="margin-left:10px;"><span class="tgt-dot-legend"></span>target date</span>
+      </div>
+    </div>
 
-    <label>Exam date (optional)</label>
-    <input type="date" id="examDateInput">
+    <div class="card" id="calDayCard">
+      <h2 id="calDayTitle">Select a day</h2>
+      <div id="calDayContent" style="font-size:13px;color:#9aa4b2;">Tap a date above to see sessions and targets for that day.</div>
+    </div>
+  </div>
 
-    <label style="margin-top:16px;">Per-subject target (total hours for the whole syllabus)</label>
-    <div id="subjectTargetInputs"></div>
+  <!-- ===== TARGETS TAB ===== -->
+  <div class="tab-panel" id="tab-targets">
+    <div class="card">
+      <h2>Overall targets</h2>
+      <label>Daily study target (minutes)</label>
+      <input type="number" id="dailyTargetInput" min="0" placeholder="e.g. 360">
 
-    <button onclick="saveSettings()">Save settings</button>
+      <label>Exam date (optional)</label>
+      <input type="date" id="examDateInput">
+    </div>
+
+    <div class="card">
+      <h2>Per-subject targets</h2>
+      <p style="font-size:12px;color:#9aa4b2;margin-top:0;">Set a total-hours target, plus the dates you want to finish the syllabus and each revision, for every subject.</p>
+      <div id="subjectTargetInputs"></div>
+    </div>
+
+    <button onclick="saveSettings()">Save all targets</button>
     <div id="settingsToast"></div>
+
+    <button class="secondary" onclick="downloadBackup()">Download backup (JSON)</button>
+
+    <p class="sub" style="margin-top:20px;">Gist ID: <code id="gistIdShown"></code></p>
+    <button class="link" onclick="logout()">Use a different token / gist</button>
   </div>
-
-  <button class="secondary" onclick="downloadBackup()">Download backup (JSON)</button>
-
-  <p class="sub" style="margin-top:20px;">Gist ID: <code id="gistIdShown"></code></p>
-  <button class="link" onclick="logout()">Use a different token / gist</button>
 </div>
 
 <script>
@@ -248,10 +343,18 @@ const DEFAULT_SUBJECTS = [
 ];
 const FILE_NAME = 'ca-tracker-data.json';
 const API = 'https://api.github.com';
+const TARGET_DATE_LABELS = {
+  syllabusDate: 'Syllabus complete',
+  rev1Date: 'Revision 1',
+  rev2Date: 'Revision 2',
+  rev3Date: 'Revision 3'
+};
 
 let PAT = localStorage.getItem('ca_pat') || '';
 let GIST_ID = localStorage.getItem('ca_gist_id') || '';
 let appData = { subjects: DEFAULT_SUBJECTS, logs: [], settings: { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} } };
+
+let calYear, calMonth, calSelectedDate = null;
 
 function ghHeaders() {
   return { 'Authorization': 'Bearer ' + PAT, 'Accept': 'application/vnd.github+json' };
@@ -264,6 +367,13 @@ function localISODate(d) {
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ===== TABS =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+  if (tab === 'calendar') renderCalendar();
 }
 
 // ===== SETUP / AUTH =====
@@ -326,12 +436,25 @@ async function boot() {
   document.getElementById('gistIdShown').textContent = GIST_ID;
   document.getElementById('date').valueAsDate = new Date();
 
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+
   await fetchGist();
 
-  // migrate older data that predates ids/settings
+  // migrate older data that predates ids/settings/date-targets
   let migrated = false;
   appData.logs.forEach(l => { if (!l.id) { l.id = genId(); migrated = true; } });
   if (!appData.settings) { appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} }; migrated = true; }
+  if (appData.settings.subjectTargets) {
+    Object.keys(appData.settings.subjectTargets).forEach(s => {
+      const v = appData.settings.subjectTargets[s];
+      if (typeof v === 'number') {
+        appData.settings.subjectTargets[s] = { hours: v, syllabusDate: '', rev1Date: '', rev2Date: '', rev3Date: '' };
+        migrated = true;
+      }
+    });
+  }
   if (migrated) { try { await saveGist(); } catch (e) { /* non-fatal */ } }
 
   populateSubjects();
@@ -377,13 +500,26 @@ function populateSettingsInputs() {
   renderSubjectTargetInputs();
 }
 
+function safeSubjId(s) {
+  return 'tgt_' + s.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
 function renderSubjectTargetInputs() {
   const el = document.getElementById('subjectTargetInputs');
   const targets = appData.settings.subjectTargets || {};
   el.innerHTML = appData.subjects.map(s => {
-    const val = targets[s] || '';
-    const safeId = 'tgt_' + s.replace(/[^a-zA-Z0-9]/g, '_');
-    return `<div class="target-row"><span>${s}</span><input type="number" min="0" id="${safeId}" value="${val}" placeholder="hrs"></div>`;
+    const t = targets[s] || {};
+    const safe = safeSubjId(s);
+    return `<div class="subj-target-block">
+      <div class="subj-target-name">${s}</div>
+      <div class="subj-target-grid">
+        <div><label>Total hrs (syllabus)</label><input type="number" min="0" id="${safe}_hours" value="${t.hours || ''}" placeholder="hrs"></div>
+        <div><label>Complete syllabus by</label><input type="date" id="${safe}_syllabus" value="${t.syllabusDate || ''}"></div>
+        <div><label>Revision 1 by</label><input type="date" id="${safe}_rev1" value="${t.rev1Date || ''}"></div>
+        <div><label>Revision 2 by</label><input type="date" id="${safe}_rev2" value="${t.rev2Date || ''}"></div>
+        <div><label>Revision 3 by</label><input type="date" id="${safe}_rev3" value="${t.rev3Date || ''}"></div>
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -392,9 +528,15 @@ async function saveSettings() {
   const examDate = document.getElementById('examDateInput').value || '';
   const subjectTargets = {};
   appData.subjects.forEach(s => {
-    const safeId = 'tgt_' + s.replace(/[^a-zA-Z0-9]/g, '_');
-    const v = Number(document.getElementById(safeId).value) || 0;
-    if (v > 0) subjectTargets[s] = v;
+    const safe = safeSubjId(s);
+    const hours = Number(document.getElementById(safe + '_hours').value) || 0;
+    const syllabusDate = document.getElementById(safe + '_syllabus').value || '';
+    const rev1Date = document.getElementById(safe + '_rev1').value || '';
+    const rev2Date = document.getElementById(safe + '_rev2').value || '';
+    const rev3Date = document.getElementById(safe + '_rev3').value || '';
+    if (hours > 0 || syllabusDate || rev1Date || rev2Date || rev3Date) {
+      subjectTargets[s] = { hours, syllabusDate, rev1Date, rev2Date, rev3Date };
+    }
   });
   appData.settings = { dailyTargetMinutes: daily, examDate, subjectTargets };
   try {
@@ -596,9 +738,11 @@ function render() {
 
   renderExamBanner();
   renderTargetCard();
+  renderUpcomingTargets();
   renderHeatmap(stats.heatmap);
   renderSubjectList(stats);
   renderLogList();
+  renderCalendar();
 }
 
 function renderExamBanner() {
@@ -623,6 +767,52 @@ function renderTargetCard() {
   const pct = Math.min(100, Math.round((today / target) * 100));
   document.getElementById('targetText').textContent = `${(today / 60).toFixed(1)}h / ${(target / 60).toFixed(1)}h today (${pct}%)`;
   document.getElementById('targetBar').style.width = pct + '%';
+}
+
+function collectTargetDates() {
+  // returns { 'YYYY-MM-DD': [ 'Subject — Label', ... ] }
+  const targets = appData.settings.subjectTargets || {};
+  const map = {};
+  Object.keys(targets).forEach(s => {
+    Object.keys(TARGET_DATE_LABELS).forEach(key => {
+      const d = targets[s][key];
+      if (d) {
+        if (!map[d]) map[d] = [];
+        map[d].push(`${s} — ${TARGET_DATE_LABELS[key]}`);
+      }
+    });
+  });
+  return map;
+}
+
+function renderUpcomingTargets() {
+  const el = document.getElementById('upcomingTargetsList');
+  const targets = appData.settings.subjectTargets || {};
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const items = [];
+  Object.keys(targets).forEach(s => {
+    Object.keys(TARGET_DATE_LABELS).forEach(key => {
+      const d = targets[s][key];
+      if (d) {
+        const dObj = new Date(d + 'T00:00:00');
+        const days = Math.ceil((dObj - today) / 86400000);
+        items.push({ subject: s, label: TARGET_DATE_LABELS[key], date: d, days });
+      }
+    });
+  });
+  if (!items.length) {
+    el.innerHTML = '<div class="subject-row"><span>No target dates set yet — add them in the Targets tab.</span></div>';
+    return;
+  }
+  items.sort((a, b) => a.date.localeCompare(b.date));
+  el.innerHTML = items.slice(0, 8).map(it => {
+    const overdue = it.days < 0;
+    const dayLabel = overdue ? `${Math.abs(it.days)}d overdue` : (it.days === 0 ? 'Today' : `${it.days}d left`);
+    return `<div class="subject-row">
+      <div class="top-line"><span>${it.subject} — ${it.label}</span><span style="color:${overdue ? '#fca5a5' : '#7dd3fc'}">${dayLabel}</span></div>
+      <div class="sub-line">${it.date}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderHeatmap(heatmap) {
@@ -664,7 +854,7 @@ function renderSubjectList(stats) {
     .sort((a, b) => (stats.subjectMinutes[b] || 0) - (stats.subjectMinutes[a] || 0))
     .map(s => {
       const mins = stats.subjectMinutes[s] || 0;
-      const tgtHrs = targets[s];
+      const tgtHrs = targets[s] && targets[s].hours;
       let bar = '';
       if (tgtHrs) {
         const pct = Math.min(100, Math.round((mins / 60 / tgtHrs) * 100));
@@ -704,6 +894,97 @@ function renderLogList() {
       </div>
     </div>
   `).join('');
+}
+
+// ===== CALENDAR =====
+function calPrevMonth() {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function calNextMonth() {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function selectCalDay(dateStr) {
+  calSelectedDate = dateStr;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const dowEl = document.getElementById('calDow');
+  if (dowEl && !dowEl.childElementCount) {
+    dowEl.innerHTML = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+  }
+
+  const stats = computeStats();
+  const heatmap = stats.heatmap;
+  const targetDates = collectTargetDates();
+
+  document.getElementById('calTitle').textContent =
+    new Date(calYear, calMonth, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayStr = localISODate(new Date());
+
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-cell empty';
+    grid.appendChild(empty);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const mins = heatmap[dateStr] || 0;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell'
+      + (dateStr === todayStr ? ' today' : '')
+      + (dateStr === calSelectedDate ? ' selected' : '');
+    cell.style.background = colorFor(mins);
+    cell.onclick = () => selectCalDay(dateStr);
+    const dot = targetDates[dateStr] ? `<div class="tgt-dot" title="${targetDates[dateStr].join(', ')}"></div>` : '';
+    cell.innerHTML = `<span class="dnum">${day}</span>${dot}`;
+    grid.appendChild(cell);
+  }
+
+  if (calSelectedDate) {
+    renderCalDayPanel(calSelectedDate);
+  } else {
+    document.getElementById('calDayTitle').textContent = 'Select a day';
+    document.getElementById('calDayContent').textContent = 'Tap a date above to see sessions and targets for that day.';
+  }
+}
+
+function renderCalDayPanel(dateStr) {
+  document.getElementById('calDayTitle').textContent = dateStr;
+  const dayLogs = appData.logs.filter(l => l.date === dateStr)
+    .sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
+  const totalMin = dayLogs.reduce((s, l) => s + l.minutes, 0);
+  const targetDates = collectTargetDates();
+  const dayTargets = targetDates[dateStr] || [];
+
+  let html = `<div style="color:#e6e6e6;margin-bottom:8px;">${(totalMin / 60).toFixed(1)}h logged</div>`;
+  if (dayTargets.length) {
+    html += `<div style="color:#facc15;margin-bottom:10px;">🎯 ${dayTargets.join(' · ')}</div>`;
+  }
+  if (dayLogs.length) {
+    html += dayLogs.map(l => `
+      <div class="log-row">
+        <div>
+          <div><strong>${l.subject}</strong> · ${l.minutes}m</div>
+          <div style="color:#9aa4b2;font-size:12px;">${l.topic || ''}${l.topic && l.notes ? ' — ' : ''}${l.notes || ''}</div>
+        </div>
+      </div>`).join('');
+  } else {
+    html += '<div style="color:#9aa4b2;">No sessions logged this day.</div>';
+  }
+  document.getElementById('calDayContent').innerHTML = html;
 }
 </script>
 </body>
