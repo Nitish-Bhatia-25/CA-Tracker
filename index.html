@@ -59,7 +59,7 @@
     font-weight: 400; font-size: 12px; text-decoration: underline; margin-top: 16px;
   }
 
-  #toast {
+  #toast, #setupToast, #settingsToast {
     display: none;
     padding: 8px 12px;
     border-radius: 6px;
@@ -68,10 +68,21 @@
     text-align: center;
   }
 
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .stats.two { grid-template-columns: repeat(2, 1fr); margin-bottom: 20px; }
   .stat-box { background: #171a21; border: 1px solid #262a33; border-radius: 10px; padding: 12px; text-align: center; }
   .stat-box .val { font-size: 22px; font-weight: 700; color: #7dd3fc; }
   .stat-box .label { font-size: 11px; color: #9aa4b2; margin-top: 4px; }
+
+  #examBanner {
+    background: #171a21; border: 1px solid #262a33; border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #7dd3fc;
+  }
+
+  .bar-track { background: #0f1115; border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width .3s; }
+  .bar-track.small { height: 6px; margin-top: 4px; }
+  .bar-fill.small { background: #7dd3fc; }
 
   .heatmap-scroll { overflow-x: auto; padding-bottom: 6px; }
   .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; }
@@ -79,8 +90,25 @@
   .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #9aa4b2; margin-top: 8px; }
   .legend .cell { width: 10px; height: 10px; }
 
-  .subject-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
+  .subject-row { padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
   .subject-row:last-child { border-bottom: none; }
+  .subject-row .top-line { display: flex; justify-content: space-between; }
+  .subject-row .sub-line { font-size: 10px; color: #9aa4b2; margin-top: 2px; }
+
+  .log-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
+  .log-row:last-child { border-bottom: none; }
+  .log-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn { background: #2c3038; border: none; color: #e6e6e6; padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .icon-btn:hover { background: #374151; }
+  .icon-btn.danger { background: #5c1e1e; color: #fecaca; }
+  .icon-btn.danger:hover { background: #7f1d1d; }
+
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .filter-row > * { flex: 1; min-width: 110px; }
+
+  .target-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+  .target-row span { flex: 1; font-size: 12px; color: #c8ccd3; }
+  .target-row input { width: 80px; }
 
   .hidden { display: none; }
   code { background: #0f1115; padding: 2px 5px; border-radius: 4px; font-size: 12px; }
@@ -118,11 +146,23 @@
 <div id="app" class="hidden">
   <h1>📚 CA Final Study Tracker</h1>
 
+  <div id="examBanner" class="hidden"></div>
+
   <div class="stats">
     <div class="stat-box"><div class="val" id="statStreak">–</div><div class="label">Current streak</div></div>
     <div class="stat-box"><div class="val" id="statLongest">–</div><div class="label">Longest streak</div></div>
     <div class="stat-box"><div class="val" id="statHours">–</div><div class="label">Total hours</div></div>
     <div class="stat-box"><div class="val" id="statDays">–</div><div class="label">Days logged</div></div>
+  </div>
+  <div class="stats two">
+    <div class="stat-box"><div class="val" id="statWeek">–</div><div class="label">This week</div></div>
+    <div class="stat-box"><div class="val" id="statMonth">–</div><div class="label">This month</div></div>
+  </div>
+
+  <div class="card hidden" id="targetCard">
+    <h2>Today's target</h2>
+    <div id="targetText" style="font-size:13px;color:#9aa4b2;margin-bottom:8px;"></div>
+    <div class="bar-track"><div class="bar-fill" id="targetBar"></div></div>
   </div>
 
   <div class="card">
@@ -165,7 +205,35 @@
     <div id="subjectList"></div>
   </div>
 
-  <p class="sub">Gist ID: <code id="gistIdShown"></code></p>
+  <div class="card">
+    <h2>Recent sessions</h2>
+    <div class="filter-row">
+      <select id="filterSubject"></select>
+      <input type="date" id="filterFrom" title="From">
+      <input type="date" id="filterTo" title="To">
+    </div>
+    <button class="secondary" style="margin-top:0;" onclick="renderLogList()">Apply filter</button>
+    <div id="logList" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Targets & settings</h2>
+    <label>Daily study target (minutes)</label>
+    <input type="number" id="dailyTargetInput" min="0" placeholder="e.g. 360">
+
+    <label>Exam date (optional)</label>
+    <input type="date" id="examDateInput">
+
+    <label style="margin-top:16px;">Per-subject target (total hours for the whole syllabus)</label>
+    <div id="subjectTargetInputs"></div>
+
+    <button onclick="saveSettings()">Save settings</button>
+    <div id="settingsToast"></div>
+  </div>
+
+  <button class="secondary" onclick="downloadBackup()">Download backup (JSON)</button>
+
+  <p class="sub" style="margin-top:20px;">Gist ID: <code id="gistIdShown"></code></p>
   <button class="link" onclick="logout()">Use a different token / gist</button>
 </div>
 
@@ -183,13 +251,10 @@ const API = 'https://api.github.com';
 
 let PAT = localStorage.getItem('ca_pat') || '';
 let GIST_ID = localStorage.getItem('ca_gist_id') || '';
-let appData = { subjects: DEFAULT_SUBJECTS, logs: [] };
+let appData = { subjects: DEFAULT_SUBJECTS, logs: [], settings: { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} } };
 
 function ghHeaders() {
-  return {
-    'Authorization': 'Bearer ' + PAT,
-    'Accept': 'application/vnd.github+json'
-  };
+  return { 'Authorization': 'Bearer ' + PAT, 'Accept': 'application/vnd.github+json' };
 }
 
 function localISODate(d) {
@@ -197,11 +262,13 @@ function localISODate(d) {
   return new Date(d - tzOffset).toISOString().slice(0, 10);
 }
 
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
 // ===== SETUP / AUTH =====
 window.addEventListener('DOMContentLoaded', () => {
-  if (PAT && GIST_ID) {
-    boot();
-  }
+  if (PAT && GIST_ID) boot();
 });
 
 async function handleSetup() {
@@ -211,7 +278,6 @@ async function handleSetup() {
 
   try {
     if (gistId) {
-      // verify it loads
       const res = await fetch(`${API}/gists/${gistId}`, { headers: { Authorization: 'Bearer ' + pat } });
       if (!res.ok) throw new Error('Could not load that gist (check token/ID).');
       const gist = await res.json();
@@ -219,14 +285,13 @@ async function handleSetup() {
       if (!file) throw new Error(`Gist has no ${FILE_NAME} file — is this the right ID?`);
       PAT = pat; GIST_ID = gistId;
     } else {
-      // create a new secret gist
       const res = await fetch(`${API}/gists`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github+json' },
         body: JSON.stringify({
           description: 'CA Final Study Tracker data',
           public: false,
-          files: { [FILE_NAME]: { content: JSON.stringify({ subjects: DEFAULT_SUBJECTS, logs: [] }, null, 2) } }
+          files: { [FILE_NAME]: { content: JSON.stringify({ subjects: DEFAULT_SUBJECTS, logs: [], settings: { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} } }, null, 2) } }
         })
       });
       if (!res.ok) throw new Error('Could not create gist (check token has the gist scope).');
@@ -262,7 +327,16 @@ async function boot() {
   document.getElementById('date').valueAsDate = new Date();
 
   await fetchGist();
+
+  // migrate older data that predates ids/settings
+  let migrated = false;
+  appData.logs.forEach(l => { if (!l.id) { l.id = genId(); migrated = true; } });
+  if (!appData.settings) { appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} }; migrated = true; }
+  if (migrated) { try { await saveGist(); } catch (e) { /* non-fatal */ } }
+
   populateSubjects();
+  populateFilterSubjects();
+  populateSettingsInputs();
   render();
 }
 
@@ -275,6 +349,7 @@ async function fetchGist() {
   appData = JSON.parse(content);
   if (!appData.subjects || !appData.subjects.length) appData.subjects = DEFAULT_SUBJECTS;
   if (!appData.logs) appData.logs = [];
+  if (!appData.settings) appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} };
 }
 
 async function saveGist() {
@@ -291,10 +366,60 @@ function populateSubjects() {
   sel.innerHTML = appData.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
+function populateFilterSubjects() {
+  const sel = document.getElementById('filterSubject');
+  sel.innerHTML = '<option value="All">All subjects</option>' + appData.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function populateSettingsInputs() {
+  document.getElementById('dailyTargetInput').value = appData.settings.dailyTargetMinutes || '';
+  document.getElementById('examDateInput').value = appData.settings.examDate || '';
+  renderSubjectTargetInputs();
+}
+
+function renderSubjectTargetInputs() {
+  const el = document.getElementById('subjectTargetInputs');
+  const targets = appData.settings.subjectTargets || {};
+  el.innerHTML = appData.subjects.map(s => {
+    const val = targets[s] || '';
+    const safeId = 'tgt_' + s.replace(/[^a-zA-Z0-9]/g, '_');
+    return `<div class="target-row"><span>${s}</span><input type="number" min="0" id="${safeId}" value="${val}" placeholder="hrs"></div>`;
+  }).join('');
+}
+
+async function saveSettings() {
+  const daily = Number(document.getElementById('dailyTargetInput').value) || 0;
+  const examDate = document.getElementById('examDateInput').value || '';
+  const subjectTargets = {};
+  appData.subjects.forEach(s => {
+    const safeId = 'tgt_' + s.replace(/[^a-zA-Z0-9]/g, '_');
+    const v = Number(document.getElementById(safeId).value) || 0;
+    if (v > 0) subjectTargets[s] = v;
+  });
+  appData.settings = { dailyTargetMinutes: daily, examDate, subjectTargets };
+  try {
+    await saveGist();
+    showSettingsToast('Saved ✓', true);
+    render();
+  } catch (err) {
+    showSettingsToast(err.message, false);
+  }
+}
+
+function showSettingsToast(msg, ok) {
+  const t = document.getElementById('settingsToast');
+  t.style.display = 'block';
+  t.style.background = ok ? '#14532d' : '#5c1e1e';
+  t.style.color = ok ? '#bbf7d0' : '#fecaca';
+  t.textContent = msg;
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
 // ===== LOGGING =====
 async function submitLog() {
   const btn = document.getElementById('submitBtn');
   const entry = {
+    id: genId(),
     date: document.getElementById('date').value,
     subject: document.getElementById('subject').value,
     topic: document.getElementById('topic').value,
@@ -332,7 +457,95 @@ function showToast(msg, ok) {
   setTimeout(() => t.style.display = 'none', 2500);
 }
 
+// ===== EDIT / DELETE =====
+function startEdit(id) {
+  const entry = appData.logs.find(l => l.id === id);
+  if (!entry) return;
+  const row = document.getElementById('row_' + id);
+  row.innerHTML = `
+    <div style="width:100%;">
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <input type="date" id="edit_date_${id}" value="${entry.date}" style="flex:1;min-width:120px;">
+        <select id="edit_subject_${id}" style="flex:1;min-width:140px;">
+          ${appData.subjects.map(s => `<option value="${s}" ${s === entry.subject ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+        <input type="number" id="edit_minutes_${id}" value="${entry.minutes}" style="width:80px;">
+      </div>
+      <input type="text" id="edit_topic_${id}" value="${entry.topic || ''}" placeholder="Topic" style="margin-top:6px;">
+      <textarea id="edit_notes_${id}" placeholder="Notes" style="margin-top:6px;">${entry.notes || ''}</textarea>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button onclick="saveEdit('${id}')" style="margin-top:0;">Save</button>
+        <button class="secondary" onclick="renderLogList()" style="margin-top:0;">Cancel</button>
+      </div>
+    </div>`;
+}
+
+async function saveEdit(id) {
+  const entry = appData.logs.find(l => l.id === id);
+  if (!entry) return;
+  entry.date = document.getElementById('edit_date_' + id).value;
+  entry.subject = document.getElementById('edit_subject_' + id).value;
+  entry.minutes = Number(document.getElementById('edit_minutes_' + id).value) || entry.minutes;
+  entry.topic = document.getElementById('edit_topic_' + id).value;
+  entry.notes = document.getElementById('edit_notes_' + id).value;
+  try {
+    await saveGist();
+    render();
+  } catch (err) {
+    showToast(err.message, false);
+  }
+}
+
+async function deleteLog(id) {
+  if (!confirm('Delete this session?')) return;
+  const backup = appData.logs;
+  appData.logs = appData.logs.filter(l => l.id !== id);
+  try {
+    await saveGist();
+    render();
+  } catch (err) {
+    appData.logs = backup;
+    showToast(err.message, false);
+  }
+}
+
+// ===== BACKUP =====
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify(appData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ca-tracker-backup-' + localISODate(new Date()) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ===== STATS / RENDER =====
+function todayMinutes() {
+  const today = localISODate(new Date());
+  return appData.logs.filter(l => l.date === today).reduce((s, l) => s + l.minutes, 0);
+}
+
+function weekRange() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const day = today.getDay();
+  const diffToMon = (day === 0 ? -6 : 1 - day);
+  const monday = new Date(today); monday.setDate(today.getDate() + diffToMon);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  return { start: localISODate(monday), end: localISODate(sunday) };
+}
+
+function weekMinutes() {
+  const { start, end } = weekRange();
+  return appData.logs.filter(l => l.date >= start && l.date <= end).reduce((s, l) => s + l.minutes, 0);
+}
+
+function monthMinutes() {
+  const now = new Date();
+  const ym = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  return appData.logs.filter(l => l.date.startsWith(ym)).reduce((s, l) => s + l.minutes, 0);
+}
+
 function computeStats() {
   const dateSet = new Set();
   const heatmap = {};
@@ -378,14 +591,38 @@ function render() {
   document.getElementById('statLongest').textContent = stats.longestStreak + 'd';
   document.getElementById('statHours').textContent = (stats.totalMinutes / 60).toFixed(1);
   document.getElementById('statDays').textContent = stats.totalDays;
+  document.getElementById('statWeek').textContent = (weekMinutes() / 60).toFixed(1) + 'h';
+  document.getElementById('statMonth').textContent = (monthMinutes() / 60).toFixed(1) + 'h';
 
+  renderExamBanner();
+  renderTargetCard();
   renderHeatmap(stats.heatmap);
+  renderSubjectList(stats);
+  renderLogList();
+}
 
-  const list = document.getElementById('subjectList');
-  const entries = Object.entries(stats.subjectMinutes).sort((a, b) => b[1] - a[1]);
-  list.innerHTML = entries.length
-    ? entries.map(([s, m]) => `<div class="subject-row"><span>${s}</span><span>${(m / 60).toFixed(1)}h</span></div>`).join('')
-    : '<div class="subject-row"><span>No sessions logged yet</span></div>';
+function renderExamBanner() {
+  const el = document.getElementById('examBanner');
+  const examDate = appData.settings.examDate;
+  if (!examDate) { el.classList.add('hidden'); return; }
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const exam = new Date(examDate + 'T00:00:00');
+  const days = Math.ceil((exam - today) / 86400000);
+  el.classList.remove('hidden');
+  el.textContent = days >= 0
+    ? `📅 ${days} day${days === 1 ? '' : 's'} to your exam (${examDate})`
+    : `Exam date (${examDate}) has passed`;
+}
+
+function renderTargetCard() {
+  const card = document.getElementById('targetCard');
+  const target = appData.settings.dailyTargetMinutes || 0;
+  if (!target) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  const today = todayMinutes();
+  const pct = Math.min(100, Math.round((today / target) * 100));
+  document.getElementById('targetText').textContent = `${(today / 60).toFixed(1)}h / ${(target / 60).toFixed(1)}h today (${pct}%)`;
+  document.getElementById('targetBar').style.width = pct + '%';
 }
 
 function renderHeatmap(heatmap) {
@@ -415,6 +652,58 @@ function colorFor(mins) {
   if (mins < 60) return '#1a5c3a';
   if (mins < 120) return '#2e9e5b';
   return '#4ade80';
+}
+
+function renderSubjectList(stats) {
+  const list = document.getElementById('subjectList');
+  const targets = appData.settings.subjectTargets || {};
+  const allSubjects = new Set([...Object.keys(stats.subjectMinutes), ...Object.keys(targets)]);
+  if (!allSubjects.size) { list.innerHTML = '<div class="subject-row"><span>No sessions logged yet</span></div>'; return; }
+
+  list.innerHTML = Array.from(allSubjects)
+    .sort((a, b) => (stats.subjectMinutes[b] || 0) - (stats.subjectMinutes[a] || 0))
+    .map(s => {
+      const mins = stats.subjectMinutes[s] || 0;
+      const tgtHrs = targets[s];
+      let bar = '';
+      if (tgtHrs) {
+        const pct = Math.min(100, Math.round((mins / 60 / tgtHrs) * 100));
+        bar = `<div class="bar-track small"><div class="bar-fill small" style="width:${pct}%;"></div></div>
+               <div class="sub-line">${(mins / 60).toFixed(1)}h / ${tgtHrs}h (${pct}%)</div>`;
+      }
+      return `<div class="subject-row">
+        <div class="top-line"><span>${s}</span><span>${(mins / 60).toFixed(1)}h</span></div>
+        ${bar}
+      </div>`;
+    }).join('');
+}
+
+function renderLogList() {
+  const subjFilter = document.getElementById('filterSubject').value;
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+
+  let rows = appData.logs.slice().sort((a, b) => b.date.localeCompare(a.date) || (b.ts || '').localeCompare(a.ts || ''));
+  if (subjFilter && subjFilter !== 'All') rows = rows.filter(r => r.subject === subjFilter);
+  if (from) rows = rows.filter(r => r.date >= from);
+  if (to) rows = rows.filter(r => r.date <= to);
+  rows = rows.slice(0, 50);
+
+  const el = document.getElementById('logList');
+  if (!rows.length) { el.innerHTML = '<div class="log-row"><span>No sessions match.</span></div>'; return; }
+
+  el.innerHTML = rows.map(r => `
+    <div class="log-row" id="row_${r.id}">
+      <div>
+        <div><strong>${r.date}</strong> · ${r.subject} · ${r.minutes}m</div>
+        <div style="color:#9aa4b2;font-size:12px;">${r.topic || ''}${r.topic && r.notes ? ' — ' : ''}${r.notes || ''}</div>
+      </div>
+      <div class="log-row-actions">
+        <button class="icon-btn" onclick="startEdit('${r.id}')">Edit</button>
+        <button class="icon-btn danger" onclick="deleteLog('${r.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
 }
 </script>
 </body>
