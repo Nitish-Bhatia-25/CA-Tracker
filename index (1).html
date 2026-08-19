@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CA Final Study Tracker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #0f1115;
+    color: #e6e6e6;
+    margin: 0;
+    padding: 24px;
+    max-width: 640px;
+    margin-inline: auto;
+  }
+  h1 { font-size: 20px; margin: 0 0 20px; }
+  p.sub { color: #9aa4b2; font-size: 13px; margin-top: -14px; margin-bottom: 20px; }
+
+  .card {
+    background: #171a21;
+    border: 1px solid #262a33;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 12px; color: #c8ccd3; }
+
+  label { display: block; font-size: 12px; color: #9aa4b2; margin-bottom: 4px; margin-top: 10px; }
+  input, select, textarea {
+    width: 100%;
+    background: #0f1115;
+    border: 1px solid #2c3038;
+    border-radius: 6px;
+    color: #e6e6e6;
+    padding: 8px;
+    font-size: 14px;
+  }
+  textarea { resize: vertical; min-height: 50px; }
+  button {
+    margin-top: 14px;
+    width: 100%;
+    background: #2563eb;
+    border: none;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #374151; cursor: not-allowed; }
+  button.secondary { background: #2c3038; }
+  button.secondary:hover { background: #374151; }
+  button.link {
+    background: none; color: #7dd3fc; width: auto; padding: 0;
+    font-weight: 400; font-size: 12px; text-decoration: underline; margin-top: 16px;
+  }
+
+  #toast {
+    display: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat-box { background: #171a21; border: 1px solid #262a33; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-box .val { font-size: 22px; font-weight: 700; color: #7dd3fc; }
+  .stat-box .label { font-size: 11px; color: #9aa4b2; margin-top: 4px; }
+
+  .heatmap-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; }
+  .cell { width: 12px; height: 12px; border-radius: 2px; background: #21262d; }
+  .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #9aa4b2; margin-top: 8px; }
+  .legend .cell { width: 10px; height: 10px; }
+
+  .subject-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #21262d; font-size: 13px; }
+  .subject-row:last-child { border-bottom: none; }
+
+  .hidden { display: none; }
+  code { background: #0f1115; padding: 2px 5px; border-radius: 4px; font-size: 12px; }
+  a { color: #7dd3fc; }
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen">
+  <h1>📚 CA Final Study Tracker</h1>
+  <p class="sub">One-time setup on this device. Your data lives in a private GitHub Gist, so any device that logs in here sees the same data.</p>
+
+  <div class="card">
+    <h2>1. Personal access token</h2>
+    <p style="font-size:12px;color:#9aa4b2;margin-top:0;">
+      GitHub → Settings → Developer settings →
+      <a href="https://github.com/settings/tokens/new?scopes=gist&description=CA%20Tracker" target="_blank">Personal access tokens (classic)</a>
+      → New token → tick only the <code>gist</code> scope → Generate. Paste it below (kept only in this browser's local storage, sent only to api.github.com).
+    </p>
+    <label>Token</label>
+    <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+  </div>
+
+  <div class="card">
+    <h2>2. Data storage</h2>
+    <label>If you already have a tracker gist, paste its ID (optional)</label>
+    <input type="text" id="gistIdInput" placeholder="leave blank to create a new one">
+    <button onclick="handleSetup()">Connect</button>
+    <div id="setupToast"></div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app" class="hidden">
+  <h1>📚 CA Final Study Tracker</h1>
+
+  <div class="stats">
+    <div class="stat-box"><div class="val" id="statStreak">–</div><div class="label">Current streak</div></div>
+    <div class="stat-box"><div class="val" id="statLongest">–</div><div class="label">Longest streak</div></div>
+    <div class="stat-box"><div class="val" id="statHours">–</div><div class="label">Total hours</div></div>
+    <div class="stat-box"><div class="val" id="statDays">–</div><div class="label">Days logged</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Log a session</h2>
+    <label>Date</label>
+    <input type="date" id="date">
+
+    <label>Subject</label>
+    <select id="subject"></select>
+
+    <label>Topic (optional)</label>
+    <input type="text" id="topic" placeholder="e.g. Ind AS 116">
+
+    <label>Minutes studied</label>
+    <input type="number" id="minutes" min="1" placeholder="e.g. 90">
+
+    <label>Notes (optional)</label>
+    <textarea id="notes" placeholder="Anything worth remembering"></textarea>
+
+    <button id="submitBtn" onclick="submitLog()">Log session</button>
+    <div id="toast"></div>
+  </div>
+
+  <div class="card">
+    <h2>Last 26 weeks</h2>
+    <div class="heatmap-scroll"><div class="heatmap" id="heatmap"></div></div>
+    <div class="legend">
+      Less
+      <div class="cell" style="background:#21262d"></div>
+      <div class="cell" style="background:#123d29"></div>
+      <div class="cell" style="background:#1a5c3a"></div>
+      <div class="cell" style="background:#2e9e5b"></div>
+      <div class="cell" style="background:#4ade80"></div>
+      More
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Time by subject</h2>
+    <div id="subjectList"></div>
+  </div>
+
+  <p class="sub">Gist ID: <code id="gistIdShown"></code></p>
+  <button class="link" onclick="logout()">Use a different token / gist</button>
+</div>
+
+<script>
+const DEFAULT_SUBJECTS = [
+  'Financial Reporting',
+  'Advanced Financial Management',
+  'Advanced Auditing & Professional Ethics',
+  'Direct Tax & International Taxation',
+  'Indirect Tax Laws',
+  'Integrated Business Solutions'
+];
+const FILE_NAME = 'ca-tracker-data.json';
+const API = 'https://api.github.com';
+
+let PAT = localStorage.getItem('ca_pat') || '';
+let GIST_ID = localStorage.getItem('ca_gist_id') || '';
+let appData = { subjects: DEFAULT_SUBJECTS, logs: [] };
+
+function ghHeaders() {
+  return {
+    'Authorization': 'Bearer ' + PAT,
+    'Accept': 'application/vnd.github+json'
+  };
+}
+
+function localISODate(d) {
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  return new Date(d - tzOffset).toISOString().slice(0, 10);
+}
+
+// ===== SETUP / AUTH =====
+window.addEventListener('DOMContentLoaded', () => {
+  if (PAT && GIST_ID) {
+    boot();
+  }
+});
+
+async function handleSetup() {
+  const pat = document.getElementById('patInput').value.trim();
+  const gistId = document.getElementById('gistIdInput').value.trim();
+  if (!pat) { setupToast('Paste a token first.', false); return; }
+
+  try {
+    if (gistId) {
+      // verify it loads
+      const res = await fetch(`${API}/gists/${gistId}`, { headers: { Authorization: 'Bearer ' + pat } });
+      if (!res.ok) throw new Error('Could not load that gist (check token/ID).');
+      const gist = await res.json();
+      const file = gist.files[FILE_NAME];
+      if (!file) throw new Error(`Gist has no ${FILE_NAME} file — is this the right ID?`);
+      PAT = pat; GIST_ID = gistId;
+    } else {
+      // create a new secret gist
+      const res = await fetch(`${API}/gists`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + pat, Accept: 'application/vnd.github+json' },
+        body: JSON.stringify({
+          description: 'CA Final Study Tracker data',
+          public: false,
+          files: { [FILE_NAME]: { content: JSON.stringify({ subjects: DEFAULT_SUBJECTS, logs: [] }, null, 2) } }
+        })
+      });
+      if (!res.ok) throw new Error('Could not create gist (check token has the gist scope).');
+      const gist = await res.json();
+      PAT = pat; GIST_ID = gist.id;
+    }
+    localStorage.setItem('ca_pat', PAT);
+    localStorage.setItem('ca_gist_id', GIST_ID);
+    boot();
+  } catch (err) {
+    setupToast(err.message, false);
+  }
+}
+
+function setupToast(msg, ok) {
+  const t = document.getElementById('setupToast');
+  t.style.display = 'block';
+  t.style.background = ok ? '#14532d' : '#5c1e1e';
+  t.style.color = ok ? '#bbf7d0' : '#fecaca';
+  t.textContent = msg;
+}
+
+function logout() {
+  localStorage.removeItem('ca_pat');
+  localStorage.removeItem('ca_gist_id');
+  location.reload();
+}
+
+async function boot() {
+  document.getElementById('setupScreen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('gistIdShown').textContent = GIST_ID;
+  document.getElementById('date').valueAsDate = new Date();
+
+  await fetchGist();
+  populateSubjects();
+  render();
+}
+
+// ===== DATA (GIST) =====
+async function fetchGist() {
+  const res = await fetch(`${API}/gists/${GIST_ID}`, { headers: ghHeaders() });
+  if (!res.ok) { showToast('Failed to load data from GitHub.', false); return; }
+  const gist = await res.json();
+  const content = gist.files[FILE_NAME].content;
+  appData = JSON.parse(content);
+  if (!appData.subjects || !appData.subjects.length) appData.subjects = DEFAULT_SUBJECTS;
+  if (!appData.logs) appData.logs = [];
+}
+
+async function saveGist() {
+  const res = await fetch(`${API}/gists/${GIST_ID}`, {
+    method: 'PATCH',
+    headers: ghHeaders(),
+    body: JSON.stringify({ files: { [FILE_NAME]: { content: JSON.stringify(appData, null, 2) } } })
+  });
+  if (!res.ok) throw new Error('Failed to save to GitHub.');
+}
+
+function populateSubjects() {
+  const sel = document.getElementById('subject');
+  sel.innerHTML = appData.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+// ===== LOGGING =====
+async function submitLog() {
+  const btn = document.getElementById('submitBtn');
+  const entry = {
+    date: document.getElementById('date').value,
+    subject: document.getElementById('subject').value,
+    topic: document.getElementById('topic').value,
+    minutes: Number(document.getElementById('minutes').value),
+    notes: document.getElementById('notes').value,
+    ts: new Date().toISOString()
+  };
+  if (!entry.date || !entry.subject || !entry.minutes) {
+    showToast('Fill date, subject and minutes.', false);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    appData.logs.push(entry);
+    await saveGist();
+    document.getElementById('topic').value = '';
+    document.getElementById('minutes').value = '';
+    document.getElementById('notes').value = '';
+    showToast('Logged ✓', true);
+    render();
+  } catch (err) {
+    appData.logs.pop();
+    showToast(err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showToast(msg, ok) {
+  const t = document.getElementById('toast');
+  t.style.display = 'block';
+  t.style.background = ok ? '#14532d' : '#5c1e1e';
+  t.style.color = ok ? '#bbf7d0' : '#fecaca';
+  t.textContent = msg;
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
+// ===== STATS / RENDER =====
+function computeStats() {
+  const dateSet = new Set();
+  const heatmap = {};
+  const subjectMinutes = {};
+  let totalMinutes = 0;
+
+  appData.logs.forEach(r => {
+    dateSet.add(r.date);
+    heatmap[r.date] = (heatmap[r.date] || 0) + r.minutes;
+    totalMinutes += r.minutes;
+    subjectMinutes[r.subject] = (subjectMinutes[r.subject] || 0) + r.minutes;
+  });
+
+  const streaks = computeStreaks(dateSet);
+  return { totalMinutes, totalDays: dateSet.size, subjectMinutes, heatmap, ...streaks };
+}
+
+function computeStreaks(dateSet) {
+  if (dateSet.size === 0) return { currentStreak: 0, longestStreak: 0 };
+  const dates = Array.from(dateSet).sort();
+
+  let longest = 1, run = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const diffDays = Math.round((new Date(dates[i]) - new Date(dates[i - 1])) / 86400000);
+    run = diffDays === 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  }
+
+  let current = 0;
+  let cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  if (!dateSet.has(localISODate(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (dateSet.has(localISODate(cursor))) {
+    current++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return { currentStreak: current, longestStreak: longest };
+}
+
+function render() {
+  const stats = computeStats();
+  document.getElementById('statStreak').textContent = stats.currentStreak + 'd';
+  document.getElementById('statLongest').textContent = stats.longestStreak + 'd';
+  document.getElementById('statHours').textContent = (stats.totalMinutes / 60).toFixed(1);
+  document.getElementById('statDays').textContent = stats.totalDays;
+
+  renderHeatmap(stats.heatmap);
+
+  const list = document.getElementById('subjectList');
+  const entries = Object.entries(stats.subjectMinutes).sort((a, b) => b[1] - a[1]);
+  list.innerHTML = entries.length
+    ? entries.map(([s, m]) => `<div class="subject-row"><span>${s}</span><span>${(m / 60).toFixed(1)}h</span></div>`).join('')
+    : '<div class="subject-row"><span>No sessions logged yet</span></div>';
+}
+
+function renderHeatmap(heatmap) {
+  const el = document.getElementById('heatmap');
+  el.innerHTML = '';
+  const days = 26 * 7;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const end = new Date(today); end.setDate(end.getDate() + (6 - today.getDay()));
+  const start = new Date(end); start.setDate(start.getDate() - (days - 1));
+
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start); d.setDate(d.getDate() + i);
+    const key = localISODate(d);
+    const mins = heatmap[key] || 0;
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.title = key + ': ' + mins + ' min';
+    cell.style.background = colorFor(mins);
+    if (d > today) cell.style.opacity = '0.25';
+    el.appendChild(cell);
+  }
+}
+
+function colorFor(mins) {
+  if (mins <= 0) return '#21262d';
+  if (mins < 30) return '#123d29';
+  if (mins < 60) return '#1a5c3a';
+  if (mins < 120) return '#2e9e5b';
+  return '#4ade80';
+}
+</script>
+</body>
+</html>
