@@ -424,6 +424,7 @@
 
     <div class="card" id="todayCard">
       <div class="card-head"><h2>🎯 Today</h2><span style="font-size:11px;color:var(--text-muted);" id="todayDateLbl"></span></div>
+      <div class="hidden" id="streakRiskBanner" style="font-size:12px;color:var(--warn);background:rgba(245,158,11,0.12);border-radius:8px;padding:8px 10px;margin-bottom:10px;">⚠️ It's evening and today's still empty — log something to keep your streak alive.</div>
       <div class="today-ring-row">
         <div>
           <div class="today-ring-val" id="todayVal">0h 0m</div>
@@ -513,8 +514,11 @@
         <button type="button" class="preset-btn" data-mins="120" onclick="setMinutes(120)">2h</button>
       </div>
 
-      <label>Notes (optional)</label>
-      <textarea id="notes" placeholder="Anything worth remembering"></textarea>
+      <button type="button" class="link" id="notesToggle" onclick="showNotesField()" style="margin-top:14px;">+ Add notes</button>
+      <div class="hidden" id="notesWrap">
+        <label>Notes (optional)</label>
+        <textarea id="notes" placeholder="Anything worth remembering"></textarea>
+      </div>
 
       <button id="submitBtn" onclick="submitLog()">Log session</button>
       <div id="toast"></div>
@@ -539,7 +543,8 @@
         <h2 id="calTitle"></h2>
         <button class="icon-btn cal-nav-btn" onclick="calNextMonth()">›</button>
       </div>
-      <button class="secondary" style="margin-top:0;margin-bottom:12px;" onclick="calGoToday()">Jump to today</button>
+      <button class="secondary" style="margin-top:0;margin-bottom:8px;" onclick="calGoToday()">Jump to today</button>
+      <div style="text-align:center;font-size:10.5px;color:var(--text-muted);margin-bottom:10px;">← swipe to change month →</div>
       <div class="cal-grid" id="calDow"></div>
       <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
       <div class="legend" id="calLegend"></div>
@@ -745,6 +750,7 @@ async function boot() {
   });
 
   renderStageChips();
+  setupCalendarSwipe();
 
   const now = new Date();
   calYear = now.getFullYear();
@@ -912,6 +918,38 @@ function bumpTime(id, delta) {
   input.dispatchEvent(new Event('input'));
 }
 
+function showNotesField() {
+  document.getElementById('notesWrap').classList.remove('hidden');
+  document.getElementById('notesToggle').classList.add('hidden');
+  document.getElementById('notes').focus();
+}
+
+function resetNotesField() {
+  document.getElementById('notesWrap').classList.add('hidden');
+  document.getElementById('notesToggle').classList.remove('hidden');
+}
+
+function setupCalendarSwipe() {
+  const el = document.getElementById('calGrid');
+  if (!el) return;
+  let startX = 0, startY = 0, tracking = false;
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0) calNextMonth(); else calPrevMonth();
+    }
+  }, { passive: true });
+}
+
 function renderStageChips() {
   const el = document.getElementById('stageChips');
   el.innerHTML = STAGES.map(st => `<button type="button" class="chip-btn${st === selectedStage ? ' active' : ''}" onclick="pickStage('${st}')">${STAGE_LABELS_SHORT[st]}</button>`).join('');
@@ -947,6 +985,7 @@ async function submitLog() {
     document.getElementById('hoursInput').value = '';
     document.getElementById('minsInput').value = '';
     document.getElementById('notes').value = '';
+    resetNotesField();
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
     showToast('Logged ✓', true);
     render();
@@ -1297,6 +1336,11 @@ function renderToday() {
   const dayLogs = appData.logs.filter(l => l.date === today).sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
   const total = dayLogs.reduce((s, l) => s + l.minutes, 0);
   const target = appData.settings.dailyTargetMinutes || 0;
+
+  const hourNow = new Date().getHours();
+  const currentStreak = computeStats().currentStreak;
+  const banner = document.getElementById('streakRiskBanner');
+  banner.classList.toggle('hidden', !(hourNow >= 18 && total === 0 && currentStreak > 0));
 
   document.getElementById('todayVal').textContent = `${Math.floor(total / 60)}h ${total % 60}m`;
   const barWrap = document.getElementById('todayBarWrap');
