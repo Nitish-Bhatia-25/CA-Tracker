@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f1115" id="themeColorMeta">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,6 +23,7 @@
     --input-bg: #0f1115;
     --text: #e6e6e6;
     --card-bg: #171a21;
+    --card-bg-2: #1c202a;
     --border: #262a33;
     --divider: #21262d;
     --cell-empty: #21262d;
@@ -34,12 +35,18 @@
     --accent-light: #7dd3fc;
     --btn-secondary-bg: #2c3038;
     --btn-secondary-hover: #374151;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --over: #a78bfa;
+    --hero-grad: linear-gradient(135deg,#1d2333,#171a21 60%);
   }
   [data-theme="light"] {
     --bg: #f5f6f8;
     --input-bg: #eef0f3;
     --text: #1a1d23;
     --card-bg: #ffffff;
+    --card-bg-2: #f8f9fb;
     --border: #e2e5ea;
     --divider: #e5e7eb;
     --cell-empty: #e2e5ea;
@@ -51,24 +58,31 @@
     --accent-light: #0284c7;
     --btn-secondary-bg: #eef0f3;
     --btn-secondary-hover: #e2e5ea;
+    --success: #16a34a;
+    --warn: #d97706;
+    --danger: #dc2626;
+    --over: #7c3aed;
+    --hero-grad: linear-gradient(135deg,#eaf1ff,#f8f9fb 60%);
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
     margin: 0;
-    padding: 24px;
+    padding: 16px 16px 24px;
     max-width: 640px;
     margin-inline: auto;
     transition: background .2s, color .2s;
   }
-  h1 { font-size: 20px; margin: 0 0 20px; }
-  p.sub { color: var(--text-muted); font-size: 13px; margin-top: -14px; margin-bottom: 20px; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  h1 .brand-emoji { margin-right: 4px; }
+  p.sub { color: var(--text-muted); font-size: 13px; margin-top: 0; margin-bottom: 20px; line-height: 1.5; }
 
   .theme-toggle-btn {
-    position: fixed; top: 14px; right: 14px; z-index: 50;
+    position: fixed; top: 12px; right: 12px; z-index: 50;
     width: auto; margin-top: 0; padding: 6px 12px; font-size: 12px;
     background: var(--btn-secondary-bg); color: var(--text); border-radius: 20px;
     border: 1px solid var(--border);
@@ -78,21 +92,23 @@
   .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
     padding: 16px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
-  .card h2 { font-size: 14px; margin: 0 0 12px; color: var(--text-secondary); }
+  .card h2 { font-size: 14px; margin: 0 0 12px; color: var(--text-secondary); display:flex; align-items:center; gap:6px; }
+  .card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .card-head h2 { margin: 0; }
 
   label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; margin-top: 10px; }
   input, select, textarea {
     width: 100%;
     background: var(--input-bg);
     border: 1px solid var(--input-border);
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--text);
-    padding: 8px;
-    font-size: 14px;
+    padding: 10px;
+    font-size: 15px;
   }
   textarea { resize: vertical; min-height: 50px; }
   button {
@@ -101,9 +117,9 @@
     background: var(--accent);
     border: none;
     color: white;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
   }
@@ -116,49 +132,133 @@
     font-weight: 400; font-size: 12px; text-decoration: underline; margin-top: 16px;
   }
 
-  #toast, #setupToast, #settingsToast {
+  #toast, #setupToast, #settingsToast, #todayToast {
     display: none;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 12px;
     margin-top: 10px;
     text-align: center;
   }
 
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
-  .stats.two { grid-template-columns: repeat(2, 1fr); margin-bottom: 20px; }
-  .stat-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
-  .stat-box .val { font-size: 22px; font-weight: 700; color: var(--accent-light); }
-  .stat-box .label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  /* ---------- Onboarding ---------- */
+  .welcome-hero { text-align:center; padding: 18px 6px 6px; }
+  .welcome-hero .emoji { font-size: 40px; }
+  .welcome-hero h1 { font-size: 22px; margin: 10px 0 6px; }
+  .step-card { display:flex; gap:12px; }
+  .step-num {
+    flex-shrink:0; width:28px; height:28px; border-radius:50%; background:var(--accent);
+    color:#fff; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .step-body { flex:1; }
+  .step-body h2 { margin:0 0 4px; font-size:14px; color:var(--text); }
+  .step-body p { margin:0 0 10px; font-size:12.5px; color:var(--text-muted); line-height:1.5; }
+  .cta-link-btn {
+    display:inline-block; margin-top:2px; margin-bottom:10px; background:var(--btn-secondary-bg);
+    color:var(--text); text-decoration:none; padding:9px 14px; border-radius:8px; font-size:13px; font-weight:600;
+  }
+  details.advanced-toggle { margin-top:8px; }
+  details.advanced-toggle summary { font-size:12px; color:var(--text-muted); cursor:pointer; list-style:none; }
+  details.advanced-toggle summary::-webkit-details-marker { display:none; }
+  details.advanced-toggle summary:before { content:'▸ '; }
+  details.advanced-toggle[open] summary:before { content:'▾ '; }
+  details.advanced-toggle .inner { padding-top:8px; }
+
+  /* ---------- Hero / greeting ---------- */
+  .hero-card { background: var(--hero-grad); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:16px; }
+  .hero-greet { font-size:17px; font-weight:700; margin-bottom:2px; }
+  .hero-sub { font-size:12.5px; color:var(--text-muted); margin-bottom:14px; }
+  .hero-stats { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .hero-stat { font-size:12.5px; color:var(--text-secondary); display:flex; align-items:center; gap:5px; }
+  .hero-stat b { font-size:14px; color:var(--text); }
+  .weekbars { display:flex; align-items:flex-end; gap:6px; height:64px; margin-top:6px; }
+  .weekbar-col { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:4px; }
+  .weekbar-fill { width:100%; max-width:22px; border-radius:5px 5px 3px 3px; background:var(--cell-empty); min-height:4px; transition:height .3s; }
+  .weekbar-lbl { font-size:9.5px; color:var(--text-muted); }
+  .weekbar-col.is-today .weekbar-lbl { color:var(--accent-light); font-weight:700; }
+  .hero-target-line { font-size:11.5px; color:var(--text-muted); margin-top:10px; }
+  .hero-target-bar { margin-top:4px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stats.two { grid-template-columns: repeat(2, 1fr); margin-bottom: 16px; }
+  .stat-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 6px; text-align: center; }
+  .stat-box .val { font-size: 19px; font-weight: 700; color: var(--accent-light); }
+  .stat-box .label { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
 
   #examBanner {
-    background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
     padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--accent-light);
   }
 
   .bar-track { background: var(--input-bg); border-radius: 6px; height: 10px; overflow: hidden; }
-  .bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width .3s; }
+  .bar-fill { height: 100%; background: var(--success); width: 0%; transition: width .3s; }
   .bar-track.small { height: 6px; margin-top: 4px; }
   .bar-fill.small { background: var(--accent-light); }
 
+  /* ---------- Today card ---------- */
+  .today-ring-row { display:flex; align-items:center; gap:16px; margin-bottom: 6px; }
+  .today-ring { flex-shrink:0; }
+  .today-ring-label { font-size:12px; color:var(--text-muted); }
+  .today-ring-val { font-size: 20px; font-weight:800; color:var(--text); }
+  .today-ring-sub { font-size:11.5px; color:var(--text-muted); margin-top:2px;}
+  .quick-log-row { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+  .quick-log-row select { flex:1 1 100%; margin-bottom: 2px; }
+  .chip-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip-btn {
+    flex:1; min-width:52px; margin-top:0; background: var(--btn-secondary-bg); border:none; color:var(--text-secondary);
+    padding:9px 0; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .chip-btn:hover { background: var(--btn-secondary-hover); }
+  .chip-btn.active { background: var(--accent); color:#fff; }
+  .today-log-list { margin-top:12px; }
+  .today-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--divider); font-size:12.5px; }
+  .today-row:last-child { border-bottom:none; }
+  .today-row-x { background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; padding:0 4px; margin-top:0; width:auto; }
+
+  /* ---------- Subject charts ---------- */
+  .donut-wrap { display:flex; align-items:center; gap:18px; margin-bottom: 14px; flex-wrap:wrap; }
+  .donut {
+    width:104px; height:104px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background: conic-gradient(var(--cell-empty) 0 100%);
+  }
+  .donut-hole {
+    width:66px; height:66px; border-radius:50%; background:var(--card-bg);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .donut-hole .n { font-size:15px; font-weight:800; }
+  .donut-hole .l { font-size:9px; color:var(--text-muted); }
+  .donut-legend { flex:1; min-width:140px; display:flex; flex-direction:column; gap:6px; }
+  .donut-legend-row { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); }
+  .donut-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .donut-legend-row .pct { margin-left:auto; color:var(--text-muted); }
+
   .heatmap-scroll { overflow-x: auto; padding-bottom: 6px; }
   .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; }
-  .cell { width: 12px; height: 12px; border-radius: 2px; background: var(--cell-empty); }
+  .cell { width: 12px; height: 12px; border-radius: 3px; background: var(--cell-empty); }
   .legend { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-muted); margin-top: 8px; flex-wrap: wrap; }
   .legend .cell { width: 10px; height: 10px; }
+  .legend-item { display:flex; align-items:center; gap:3px; margin-right:6px; }
 
-  .subject-row { padding: 8px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
+  .subject-row { padding: 10px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
   .subject-row:last-child { border-bottom: none; }
-  .subject-row .top-line { display: flex; justify-content: space-between; }
-  .subject-row .sub-line { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .subject-row .top-line { display: flex; justify-content: space-between; align-items:center; gap:8px; }
+  .subject-row .top-line .name { display:flex; align-items:center; gap:7px; }
+  .subject-row .sub-line { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+  .subj-bar-track { background: var(--input-bg); border-radius: 6px; height: 8px; overflow: hidden; margin-top:5px; }
+  .subj-bar-fill { height: 100%; width:0%; border-radius:6px; transition: width .3s; }
 
   .log-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
   .log-row:last-child { border-bottom: none; }
   .log-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .icon-btn { background: var(--btn-secondary-bg); border: none; color: var(--text); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .icon-btn { background: var(--btn-secondary-bg); border: none; color: var(--text); padding: 6px 10px; border-radius: 8px; font-size: 11px; cursor: pointer; }
   .icon-btn:hover { background: var(--btn-secondary-hover); }
   .icon-btn.danger { background: #5c1e1e; color: #fecaca; }
   .icon-btn.danger:hover { background: #7f1d1d; }
+  .stage-pill {
+    display:inline-block; font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:20px;
+    background: var(--btn-secondary-bg); color: var(--text-muted); margin-left:6px; vertical-align:middle;
+  }
 
   .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .filter-row > * { flex: 1; min-width: 110px; }
@@ -170,13 +270,22 @@
   .preset-row { display: flex; gap: 6px; margin-top: 8px; }
   .preset-btn {
     flex: 1; margin-top: 0; background: var(--btn-secondary-bg); border: none; color: var(--text-secondary);
-    padding: 8px 0; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+    padding: 10px 0; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer;
   }
   .preset-btn:hover { background: var(--btn-secondary-hover); }
   .preset-btn.active { background: var(--accent); color: #fff; }
 
+  .stepper-row { display:flex; gap:8px; }
+  .stepper { flex:1; display:flex; align-items:center; gap:6px; }
+  .stepper input { text-align:center; }
+  .stepper-btn {
+    margin-top:0; width:38px; height:38px; flex-shrink:0; padding:0; border-radius:8px;
+    background: var(--btn-secondary-bg); color:var(--text); font-size:17px; font-weight:700;
+  }
+  .stepper-btn:hover { background: var(--btn-secondary-hover); }
+
   .hidden { display: none; }
-  code { background: var(--input-bg); padding: 2px 5px; border-radius: 4px; font-size: 12px; color: var(--text); }
+  code { background: var(--input-bg); padding: 2px 5px; border-radius: 4px; font-size: 12px; color: var(--text); word-break:break-all; }
   a { color: var(--accent-light); }
 
   .tabbar { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
@@ -185,6 +294,7 @@
     padding: 10px 2px; font-size: 12px; font-weight: 600; cursor: pointer;
     border-bottom: 2px solid transparent; border-radius: 0; white-space: nowrap;
   }
+  .tab-btn .tico { display:block; font-size:15px; margin-bottom:2px; }
   .tab-btn:hover { background: none; color: var(--text-secondary); }
   .tab-btn.active { color: var(--accent-light); border-bottom-color: var(--accent-light); }
   .tab-panel { display: none; }
@@ -196,13 +306,13 @@
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .cal-dow { font-size: 10px; color: var(--text-muted); text-align: center; padding-bottom: 6px; }
   .cal-cell {
-    aspect-ratio: 1; border-radius: 6px; background: var(--cell-empty);
+    aspect-ratio: 1; border-radius: 8px; background: var(--cell-empty);
     display: flex; align-items: flex-start; justify-content: flex-start;
     padding: 4px; font-size: 11px; cursor: pointer; position: relative; color: #0f1115;
   }
   .cal-cell.empty { background: none; cursor: default; }
-  .cal-cell.today { box-shadow: inset 0 0 0 1px var(--accent-light); }
-  .cal-cell.selected { box-shadow: inset 0 0 0 2px #4ade80; }
+  .cal-cell.today { box-shadow: inset 0 0 0 2px var(--accent-light); }
+  .cal-cell.selected { box-shadow: inset 0 0 0 2px #fff; }
   .cal-cell .dnum { font-weight: 700; color: #e6e6e6; mix-blend-mode: difference; }
   .cal-cell .tgt-dot {
     position: absolute; top: 4px; right: 4px; width: 6px; height: 6px;
@@ -219,6 +329,32 @@
   .subj-progress { margin-bottom: 8px; }
   .subj-target-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 10px; }
   .subj-target-grid label { margin-top: 8px; margin-bottom: 3px; font-size: 10px; }
+
+  /* ---------- Exam Readiness ---------- */
+  .readiness-overall { font-size:26px; font-weight:800; margin-bottom:2px; }
+  .readiness-overall-lbl { font-size:11.5px; color:var(--text-muted); margin-bottom:14px; }
+  .readiness-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .readiness-table th { text-align:left; font-size:10.5px; color:var(--text-muted); font-weight:600; padding:0 4px 8px; }
+  .readiness-table th:not(:first-child), .readiness-table td:not(:first-child) { text-align:right; }
+  .readiness-table td { padding:8px 4px; border-top:1px solid var(--divider); }
+  .readiness-table td:first-child { font-weight:600; color:var(--text); }
+  .readiness-note { font-size:10.5px; color:var(--text-muted); margin-top:12px; line-height:1.5; }
+  .copy-btn { margin-top:0; width:auto; padding:6px 10px; font-size:11px; background:var(--btn-secondary-bg); color:var(--text); border-radius:8px; }
+
+  /* ---------- Mobile bottom nav ---------- */
+  @media (max-width: 620px) {
+    body { padding: 12px 12px calc(84px + env(safe-area-inset-bottom)); }
+    .tabbar {
+      position: fixed; left:0; right:0; bottom:0; z-index:40; margin-bottom:0;
+      background: var(--card-bg); border-top:1px solid var(--border); border-bottom:none;
+      padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+      max-width: 640px; margin-inline:auto;
+    }
+    .tab-btn.active { border-bottom-color:transparent; }
+    .stats { grid-template-columns: repeat(4, 1fr); }
+    .hero-stats { gap:10px; }
+    .donut-wrap { justify-content:center; }
+  }
 </style>
 </head>
 <body>
@@ -226,103 +362,147 @@
 <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()">☀️ Light</button>
 
 <div id="setupScreen">
-  <h1>📚 CA Final Study Tracker</h1>
-  <p class="sub">One-time setup on this device. Your data lives in a private GitHub Gist, so any device that logs in here sees the same data.</p>
-
-  <div class="card">
-    <h2>1. Personal access token</h2>
-    <p style="font-size:12px;color:var(--text-muted);margin-top:0;">
-      GitHub → Settings → Developer settings →
-      <a href="https://github.com/settings/tokens/new?scopes=gist&description=CA%20Tracker" target="_blank">Personal access tokens (classic)</a>
-      → New token → tick only the <code>gist</code> scope → Generate. Paste it below (kept only in this browser's local storage, sent only to api.github.com).
-    </p>
-    <label>Token</label>
-    <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+  <div class="welcome-hero">
+    <div class="emoji">📚</div>
+    <h1>CA Final Study Tracker</h1>
+    <p class="sub">Your personal study companion. Takes about a minute to connect — do this once per device.</p>
   </div>
 
   <div class="card">
-    <h2>2. Data storage</h2>
-    <label>If you already have a tracker gist, paste its ID (optional)</label>
-    <input type="text" id="gistIdInput" placeholder="leave blank to create a new one">
-    <button onclick="handleSetup()">Connect</button>
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h2>Get your key</h2>
+        <p>This lets the app privately save your data to your own GitHub account — nobody else can see it. Tap below, tick the one box it asks for, then generate.</p>
+        <a class="cta-link-btn" href="https://github.com/settings/tokens/new?scopes=gist&description=CA%20Tracker" target="_blank">Get my key on GitHub →</a>
+        <p style="margin-bottom:0;">Copy the key it gives you (starts with <code>ghp_</code>) and paste it below.</p>
+      </div>
+    </div>
+    <label>Your key</label>
+    <input type="password" id="patInput" placeholder="Paste your key here">
+  </div>
+
+  <div class="card">
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h2>Connect</h2>
+        <p>First time here? Just tap connect — a private storage space will be created for you automatically.</p>
+      </div>
+    </div>
+    <details class="advanced-toggle">
+      <summary>I've already set this up on another device</summary>
+      <div class="inner">
+        <label>Paste your existing tracker ID</label>
+        <input type="text" id="gistIdInput" placeholder="e.g. 8f3a9c...">
+      </div>
+    </details>
+    <button onclick="handleSetup()">Connect my tracker</button>
     <div id="setupToast"></div>
   </div>
 </div>
 
 <div id="app" class="hidden">
-  <h1>📚 CA Final Study Tracker</h1>
-
-  <div class="tabbar">
-    <button class="tab-btn active" data-tab="summary" onclick="switchTab('summary')">Summary</button>
-    <button class="tab-btn" data-tab="session" onclick="switchTab('session')">Session</button>
-    <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar')">Calendar</button>
-    <button class="tab-btn" data-tab="targets" onclick="switchTab('targets')">Targets</button>
-  </div>
+  <h1><span class="brand-emoji">📚</span>CA Final Study Tracker</h1>
 
   <div class="tab-panel active" id="tab-summary">
     <div id="examBanner" class="hidden"></div>
 
-    <div class="stats">
-      <div class="stat-box"><div class="val" id="statStreak">–</div><div class="label">Current streak</div></div>
-      <div class="stat-box"><div class="val" id="statLongest">–</div><div class="label">Longest streak</div></div>
-      <div class="stat-box"><div class="val" id="statHours">–</div><div class="label">Total hours</div></div>
-      <div class="stat-box"><div class="val" id="statDays">–</div><div class="label">Days logged</div></div>
-    </div>
-    <div class="stats two">
-      <div class="stat-box"><div class="val" id="statWeek">–</div><div class="label">This week</div></div>
-      <div class="stat-box"><div class="val" id="statMonth">–</div><div class="label">This month</div></div>
-    </div>
-
-    <div class="card hidden" id="targetCard">
-      <h2>Today's target</h2>
-      <div id="targetText" style="font-size:13px;color:var(--text-muted);margin-bottom:8px;"></div>
-      <div class="bar-track"><div class="bar-fill" id="targetBar"></div></div>
+    <div class="hero-card">
+      <div class="hero-greet" id="heroGreet">Good morning 👋</div>
+      <div class="hero-sub" id="heroSub">Here's where things stand.</div>
+      <div class="hero-stats">
+        <div class="hero-stat">🔥 <b id="statStreak">–</b>&nbsp;day streak</div>
+        <div class="hero-stat">⏱️ <b id="statHours">–</b>&nbsp;hrs total</div>
+        <div class="hero-stat">📅 <b id="statDays">–</b>&nbsp;days studied</div>
+      </div>
+      <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:4px;">THIS WEEK</div>
+      <div class="weekbars" id="weekBars"></div>
+      <div class="hero-target-line" id="heroTargetLine"></div>
+      <div class="bar-track hero-target-bar hidden" id="heroTargetBarWrap"><div class="bar-fill" id="heroTargetBar"></div></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="todayCard">
+      <div class="card-head"><h2>🎯 Today</h2><span style="font-size:11px;color:var(--text-muted);" id="todayDateLbl"></span></div>
+      <div class="today-ring-row">
+        <div>
+          <div class="today-ring-val" id="todayVal">0h 0m</div>
+          <div class="today-ring-sub" id="todaySubLbl">No sessions logged yet today</div>
+        </div>
+      </div>
+      <div class="bar-track hidden" id="todayBarWrap"><div class="bar-fill" id="todayBar"></div></div>
+
+      <div class="quick-log-row">
+        <select id="todaySubject"></select>
+        <div class="chip-row" style="width:100%;">
+          <button type="button" class="chip-btn" onclick="quickLog(15)">+15m</button>
+          <button type="button" class="chip-btn" onclick="quickLog(30)">+30m</button>
+          <button type="button" class="chip-btn" onclick="quickLog(45)">+45m</button>
+          <button type="button" class="chip-btn" onclick="quickLog(60)">+1h</button>
+        </div>
+      </div>
+      <button class="secondary" style="margin-top:10px;" onclick="switchTab('session')">+ Log with notes / custom time</button>
+      <div id="todayToast"></div>
+      <div class="today-log-list" id="todayLogList"></div>
+    </div>
+
+    <div class="card hidden" id="readinessCard">
+      <div class="card-head"><h2>🎓 Exam Readiness</h2><button class="copy-btn" onclick="copyReadiness()">Copy</button></div>
+      <div class="readiness-overall" id="readinessOverall">–</div>
+      <div class="readiness-overall-lbl">Overall readiness</div>
+      <div style="overflow-x:auto;">
+        <table class="readiness-table" id="readinessTable"></table>
+      </div>
+      <div class="readiness-note">Estimated from hours logged against your subject targets (Syllabus = full target · R1 = 30% · R2 = 20% · Practice = 15%, all typical revision loads).</div>
+    </div>
+
+    <div class="card" id="targetCard">
       <h2>Upcoming targets</h2>
       <div id="upcomingTargetsList"></div>
     </div>
 
     <div class="card">
-      <h2>Last 26 weeks</h2>
-      <div class="heatmap-scroll"><div class="heatmap" id="heatmap"></div></div>
-      <div class="legend">
-        Less
-        <div class="cell" style="background:var(--cell-empty)"></div>
-        <div class="cell" style="background:#123d29"></div>
-        <div class="cell" style="background:#1a5c3a"></div>
-        <div class="cell" style="background:#2e9e5b"></div>
-        <div class="cell" style="background:#4ade80"></div>
-        More
+      <div class="card-head"><h2>📊 Time by subject</h2></div>
+      <div class="donut-wrap">
+        <div class="donut" id="subjDonut"><div class="donut-hole"><div class="n" id="donutTotal">0h</div><div class="l">total</div></div></div>
+        <div class="donut-legend" id="donutLegend"></div>
       </div>
+      <div id="subjectList"></div>
     </div>
 
     <div class="card">
-      <h2>Time by subject</h2>
-      <div id="subjectList"></div>
+      <h2>Last 26 weeks</h2>
+      <div class="heatmap-scroll"><div class="heatmap" id="heatmap"></div></div>
+      <div class="legend" id="heatmapLegend"></div>
     </div>
   </div>
 
   <div class="tab-panel" id="tab-session">
     <div class="card">
-      <h2>Log a session</h2>
+      <h2>✍️ Log a session</h2>
       <label>Date</label>
       <input type="date" id="date">
 
       <label>Subject</label>
       <select id="subject"></select>
 
+      <label>Stage</label>
+      <div class="chip-row" id="stageChips"></div>
+
       <label>Topic (optional)</label>
       <input type="text" id="topic" placeholder="e.g. Ind AS 116">
 
       <label>Time studied</label>
-      <div style="display:flex; gap:8px;">
-        <div style="flex:1;">
-          <input type="number" id="hoursInput" min="0" max="24" placeholder="Hours">
+      <div class="stepper-row">
+        <div class="stepper">
+          <button type="button" class="stepper-btn" onclick="bumpTime('hoursInput',-1)">–</button>
+          <input type="number" id="hoursInput" min="0" max="24" placeholder="Hrs">
+          <button type="button" class="stepper-btn" onclick="bumpTime('hoursInput',1)">+</button>
         </div>
-        <div style="flex:1;">
-          <input type="number" id="minsInput" min="0" max="59" placeholder="Minutes">
+        <div class="stepper">
+          <button type="button" class="stepper-btn" onclick="bumpTime('minsInput',-15)">–</button>
+          <input type="number" id="minsInput" min="0" max="59" placeholder="Min">
+          <button type="button" class="stepper-btn" onclick="bumpTime('minsInput',15)">+</button>
         </div>
       </div>
       <div class="preset-row">
@@ -362,16 +542,7 @@
       <button class="secondary" style="margin-top:0;margin-bottom:12px;" onclick="calGoToday()">Jump to today</button>
       <div class="cal-grid" id="calDow"></div>
       <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
-      <div class="legend">
-        Less
-        <div class="cell" style="background:var(--cell-empty)"></div>
-        <div class="cell" style="background:#123d29"></div>
-        <div class="cell" style="background:#1a5c3a"></div>
-        <div class="cell" style="background:#2e9e5b"></div>
-        <div class="cell" style="background:#4ade80"></div>
-        More
-        <span style="margin-left:10px;"><span class="tgt-dot-legend"></span>target date</span>
-      </div>
+      <div class="legend" id="calLegend"></div>
     </div>
 
     <div class="card" id="calDayCard">
@@ -384,6 +555,12 @@
 
   <div class="tab-panel" id="tab-targets">
     <div class="card">
+      <h2>You</h2>
+      <label>Your name (optional, used in the greeting)</label>
+      <input type="text" id="userNameInput" placeholder="e.g. Nitish">
+    </div>
+
+    <div class="card">
       <h2>Overall targets</h2>
       <label>Daily study target (minutes)</label>
       <input type="number" id="dailyTargetInput" min="0" placeholder="e.g. 360">
@@ -394,7 +571,7 @@
 
     <div class="card">
       <h2>Per-subject targets</h2>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:0;">Set a total-hours target, plus the dates you want to finish the syllabus and each revision, for every subject.</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:0;">Set a total-hours target, plus the dates you want to finish the syllabus and each revision, for every subject. This also powers your Exam Readiness card.</p>
       <div id="subjectTargetInputs"></div>
     </div>
 
@@ -404,8 +581,15 @@
     <button class="secondary" onclick="downloadBackup()">Download backup (JSON)</button>
     <button class="secondary" onclick="downloadCSV()">Download sessions (CSV)</button>
 
-    <p class="sub" style="margin-top:20px;">Gist ID: <code id="gistIdShown"></code></p>
-    <button class="link" onclick="logout()">Use a different token / gist</button>
+    <p class="sub" style="margin-top:20px;">Tracker ID: <code id="gistIdShown"></code></p>
+    <button class="link" onclick="logout()">Use a different key / tracker</button>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="summary" onclick="switchTab('summary')"><span class="tico">📊</span>Summary</button>
+    <button class="tab-btn" data-tab="session" onclick="switchTab('session')"><span class="tico">✍️</span>Log</button>
+    <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar')"><span class="tico">📅</span>Calendar</button>
+    <button class="tab-btn" data-tab="targets" onclick="switchTab('targets')"><span class="tico">🎯</span>Targets</button>
   </div>
 </div>
 
@@ -426,12 +610,17 @@ const TARGET_DATE_LABELS = {
   rev2Date: 'Revision 2',
   rev3Date: 'Revision 3'
 };
+const STAGES = ['syllabus', 'revision1', 'revision2', 'practice'];
+const STAGE_LABELS = { syllabus: 'Syllabus', revision1: 'Revision 1', revision2: 'Revision 2', practice: 'Practice (MTP/RTP/PYQ)' };
+const STAGE_LABELS_SHORT = { syllabus: 'Syllabus', revision1: 'R1', revision2: 'R2', practice: 'Practice' };
+const PALETTE = ['#60a5fa', '#4ade80', '#f59e0b', '#f472b6', '#a78bfa', '#2dd4bf', '#fb923c', '#facc15'];
 
 let PAT = localStorage.getItem('ca_pat') || '';
 let GIST_ID = localStorage.getItem('ca_gist_id') || '';
-let appData = { subjects: DEFAULT_SUBJECTS, logs: [], settings: { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} } };
+let appData = { subjects: DEFAULT_SUBJECTS, logs: [], settings: { dailyTargetMinutes: 0, examDate: '', subjectTargets: {}, userName: '' } };
 
 let calYear, calMonth, calSelectedDate = null;
+let selectedStage = 'syllabus';
 
 function ghHeaders() {
   return { 'Authorization': 'Bearer ' + PAT, 'Accept': 'application/vnd.github+json' };
@@ -483,6 +672,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
   if (tab === 'calendar') renderCalendar();
+  window.scrollTo(0, 0);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -492,15 +682,15 @@ window.addEventListener('DOMContentLoaded', () => {
 async function handleSetup() {
   const pat = document.getElementById('patInput').value.trim();
   const gistId = document.getElementById('gistIdInput').value.trim();
-  if (!pat) { setupToast('Paste a token first.', false); return; }
+  if (!pat) { setupToast('Paste your key first.', false); return; }
 
   try {
     if (gistId) {
       const res = await fetch(`${API}/gists/${gistId}`, { headers: { Authorization: 'Bearer ' + pat } });
-      if (!res.ok) throw new Error('Could not load that gist (check token/ID).');
+      if (!res.ok) throw new Error('Could not find that tracker — check your key and ID.');
       const gist = await res.json();
       const file = gist.files[FILE_NAME];
-      if (!file) throw new Error(`Gist has no ${FILE_NAME} file — is this the right ID?`);
+      if (!file) throw new Error(`That doesn't look like a CA Tracker ID.`);
       PAT = pat; GIST_ID = gistId;
     } else {
       const res = await fetch(`${API}/gists`, {
@@ -509,10 +699,10 @@ async function handleSetup() {
         body: JSON.stringify({
           description: 'CA Final Study Tracker data',
           public: false,
-          files: { [FILE_NAME]: { content: JSON.stringify({ subjects: DEFAULT_SUBJECTS, logs: [], settings: { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} } }, null, 2) } }
+          files: { [FILE_NAME]: { content: JSON.stringify({ subjects: DEFAULT_SUBJECTS, logs: [], settings: { dailyTargetMinutes: 0, examDate: '', subjectTargets: {}, userName: '' } }, null, 2) } }
         })
       });
-      if (!res.ok) throw new Error('Could not create gist (check token has the gist scope).');
+      if (!res.ok) throw new Error('Could not set up your tracker — check the key has the right permission.');
       const gist = await res.json();
       PAT = pat; GIST_ID = gist.id;
     }
@@ -544,6 +734,7 @@ async function boot() {
   document.getElementById('gistIdShown').textContent = GIST_ID;
   document.getElementById('date').valueAsDate = new Date();
   document.getElementById('date').max = localISODate(new Date());
+  document.getElementById('todayDateLbl').textContent = new Date().toLocaleDateString('default', { weekday: 'long', month: 'short', day: 'numeric' });
   ['hoursInput', 'minsInput'].forEach(id => {
     document.getElementById(id).addEventListener('input', () => {
       const mins = getMinutesFromInputs();
@@ -553,6 +744,8 @@ async function boot() {
     });
   });
 
+  renderStageChips();
+
   const now = new Date();
   calYear = now.getFullYear();
   calMonth = now.getMonth();
@@ -560,8 +753,12 @@ async function boot() {
   await fetchGist();
 
   let migrated = false;
-  appData.logs.forEach(l => { if (!l.id) { l.id = genId(); migrated = true; } });
-  if (!appData.settings) { appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} }; migrated = true; }
+  appData.logs.forEach(l => {
+    if (!l.id) { l.id = genId(); migrated = true; }
+    if (!l.stage) { l.stage = 'syllabus'; migrated = true; }
+  });
+  if (!appData.settings) { appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {}, userName: '' }; migrated = true; }
+  if (appData.settings.userName === undefined) { appData.settings.userName = ''; migrated = true; }
   if (appData.settings.subjectTargets) {
     Object.keys(appData.settings.subjectTargets).forEach(s => {
       const v = appData.settings.subjectTargets[s];
@@ -587,7 +784,7 @@ async function fetchGist() {
   appData = JSON.parse(content);
   if (!appData.subjects || !appData.subjects.length) appData.subjects = DEFAULT_SUBJECTS;
   if (!appData.logs) appData.logs = [];
-  if (!appData.settings) appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {} };
+  if (!appData.settings) appData.settings = { dailyTargetMinutes: 0, examDate: '', subjectTargets: {}, userName: '' };
 }
 
 async function saveGist() {
@@ -602,6 +799,8 @@ async function saveGist() {
 function populateSubjects() {
   const sel = document.getElementById('subject');
   sel.innerHTML = appData.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+  const qsel = document.getElementById('todaySubject');
+  qsel.innerHTML = appData.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 function populateFilterSubjects() {
@@ -612,6 +811,7 @@ function populateFilterSubjects() {
 function populateSettingsInputs() {
   document.getElementById('dailyTargetInput').value = appData.settings.dailyTargetMinutes || '';
   document.getElementById('examDateInput').value = appData.settings.examDate || '';
+  document.getElementById('userNameInput').value = appData.settings.userName || '';
   renderSubjectTargetInputs();
 }
 
@@ -652,6 +852,7 @@ function renderSubjectTargetInputs() {
 async function saveSettings() {
   const daily = Number(document.getElementById('dailyTargetInput').value) || 0;
   const examDate = document.getElementById('examDateInput').value || '';
+  const userName = document.getElementById('userNameInput').value.trim();
   const subjectTargets = {};
   appData.subjects.forEach(s => {
     const safe = safeSubjId(s);
@@ -664,7 +865,7 @@ async function saveSettings() {
       subjectTargets[s] = { hours, syllabusDate, rev1Date, rev2Date, rev3Date };
     }
   });
-  appData.settings = { dailyTargetMinutes: daily, examDate, subjectTargets };
+  appData.settings = { dailyTargetMinutes: daily, examDate, subjectTargets, userName };
   try {
     await saveGist();
     showSettingsToast('Saved ✓', true);
@@ -701,12 +902,33 @@ function setMinutes(m) {
   });
 }
 
+function bumpTime(id, delta) {
+  const input = document.getElementById(id);
+  let v = Number(input.value) || 0;
+  v = Math.max(0, v + delta);
+  if (id === 'hoursInput') v = Math.min(24, v);
+  else v = Math.min(59, v);
+  input.value = v || '';
+  input.dispatchEvent(new Event('input'));
+}
+
+function renderStageChips() {
+  const el = document.getElementById('stageChips');
+  el.innerHTML = STAGES.map(st => `<button type="button" class="chip-btn${st === selectedStage ? ' active' : ''}" onclick="pickStage('${st}')">${STAGE_LABELS_SHORT[st]}</button>`).join('');
+}
+
+function pickStage(st) {
+  selectedStage = st;
+  renderStageChips();
+}
+
 async function submitLog() {
   const btn = document.getElementById('submitBtn');
   const entry = {
     id: genId(),
     date: document.getElementById('date').value,
     subject: document.getElementById('subject').value,
+    stage: selectedStage,
     topic: document.getElementById('topic').value,
     minutes: getMinutesFromInputs(),
     notes: document.getElementById('notes').value,
@@ -745,6 +967,31 @@ function showToast(msg, ok) {
   setTimeout(() => t.style.display = 'none', 2500);
 }
 
+function showTodayToast(msg, ok) {
+  const t = document.getElementById('todayToast');
+  t.style.display = 'block';
+  t.style.background = ok ? '#14532d' : '#5c1e1e';
+  t.style.color = ok ? '#bbf7d0' : '#fecaca';
+  t.textContent = msg;
+  setTimeout(() => t.style.display = 'none', 2000);
+}
+
+async function quickLog(mins) {
+  const subject = document.getElementById('todaySubject').value;
+  const entry = { id: genId(), date: localISODate(new Date()), subject, stage: 'syllabus', topic: '', minutes: mins, notes: '', ts: new Date().toISOString() };
+  const err = validateEntry(entry, null);
+  if (err) { showTodayToast(err, false); return; }
+  appData.logs.push(entry);
+  try {
+    await saveGist();
+    showTodayToast(`Logged +${mins}m ✓`, true);
+    render();
+  } catch (e) {
+    appData.logs.pop();
+    showTodayToast(e.message, false);
+  }
+}
+
 function startEdit(id) {
   const entry = appData.logs.find(l => l.id === id);
   if (!entry) return;
@@ -755,6 +1002,9 @@ function startEdit(id) {
         <input type="date" id="edit_date_${id}" value="${entry.date}" max="${localISODate(new Date())}" style="flex:1;min-width:120px;">
         <select id="edit_subject_${id}" style="flex:1;min-width:140px;">
           ${appData.subjects.map(s => `<option value="${s}" ${s === entry.subject ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+        <select id="edit_stage_${id}" style="flex:1;min-width:140px;">
+          ${STAGES.map(st => `<option value="${st}" ${st === (entry.stage || 'syllabus') ? 'selected' : ''}>${STAGE_LABELS[st]}</option>`).join('')}
         </select>
         <input type="number" id="edit_hours_${id}" value="${Math.floor(entry.minutes / 60) || ''}" min="0" max="24" placeholder="Hours" style="width:80px;">
         <input type="number" id="edit_mins_${id}" value="${entry.minutes % 60 || ''}" min="0" max="59" placeholder="Minutes" style="width:80px;">
@@ -778,7 +1028,8 @@ async function saveEdit(id) {
     subject: document.getElementById('edit_subject_' + id).value,
     minutes: (Number(document.getElementById('edit_hours_' + id).value) || 0) * 60 + (Number(document.getElementById('edit_mins_' + id).value) || 0),
     topic: document.getElementById('edit_topic_' + id).value,
-    notes: document.getElementById('edit_notes_' + id).value
+    notes: document.getElementById('edit_notes_' + id).value,
+    stage: document.getElementById('edit_stage_' + id).value
   };
   const err = validateEntry(candidate, id);
   if (err) { showToast(err, false); return; }
@@ -788,6 +1039,7 @@ async function saveEdit(id) {
   entry.minutes = candidate.minutes;
   entry.topic = candidate.topic;
   entry.notes = candidate.notes;
+  entry.stage = candidate.stage;
   try {
     await saveGist();
     render();
@@ -827,11 +1079,11 @@ function csvEscape(val) {
 }
 
 function downloadCSV() {
-  const rows = [['Date', 'Subject', 'Topic', 'Minutes', 'Notes']];
+  const rows = [['Date', 'Subject', 'Stage', 'Topic', 'Minutes', 'Notes']];
   appData.logs
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date) || (a.ts || '').localeCompare(b.ts || ''))
-    .forEach(l => rows.push([l.date, l.subject, l.topic || '', l.minutes, l.notes || '']));
+    .forEach(l => rows.push([l.date, l.subject, STAGE_LABELS[l.stage || 'syllabus'], l.topic || '', l.minutes, l.notes || '']));
   const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
@@ -853,7 +1105,7 @@ function weekRange() {
   const diffToMon = (day === 0 ? -6 : 1 - day);
   const monday = new Date(today); monday.setDate(today.getDate() + diffToMon);
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
-  return { start: localISODate(monday), end: localISODate(sunday) };
+  return { start: localISODate(monday), end: localISODate(sunday), mondayObj: monday };
 }
 
 function weekMinutes() {
@@ -906,23 +1158,125 @@ function computeStreaks(dateSet) {
   return { currentStreak: current, longestStreak: longest };
 }
 
+function computeStageStats() {
+  const map = {};
+  appData.logs.forEach(l => {
+    const st = l.stage || 'syllabus';
+    if (!map[l.subject]) map[l.subject] = { syllabus: 0, revision1: 0, revision2: 0, practice: 0 };
+    if (map[l.subject][st] === undefined) map[l.subject][st] = 0;
+    map[l.subject][st] += l.minutes;
+  });
+  return map;
+}
+
+function computeReadiness() {
+  const targets = appData.settings.subjectTargets || {};
+  const stageStats = computeStageStats();
+  const rows = [];
+  const pct = (mins, hrsTarget) => hrsTarget > 0 ? Math.min(100, Math.round((mins / 60 / hrsTarget) * 100)) : 0;
+  Object.keys(targets).forEach(s => {
+    const t = targets[s];
+    if (!t.hours) return;
+    const st = stageStats[s] || { syllabus: 0, revision1: 0, revision2: 0, practice: 0 };
+    const syllabusPct = pct(st.syllabus, t.hours);
+    const r1Pct = pct(st.revision1, t.hours * 0.3);
+    const r2Pct = pct(st.revision2, t.hours * 0.2);
+    const pracPct = pct(st.practice, t.hours * 0.15);
+    const overall = Math.round(syllabusPct * 0.4 + r1Pct * 0.25 + r2Pct * 0.2 + pracPct * 0.15);
+    rows.push({ subject: s, syllabusPct, r1Pct, r2Pct, pracPct, overall });
+  });
+  const overallAll = rows.length ? Math.round(rows.reduce((a, r) => a + r.overall, 0) / rows.length) : 0;
+  return { rows, overallAll };
+}
+
+/* ---- day status / colour coding ---- */
+function dayStatus(dateStr, mins, todayStr, dailyTarget) {
+  if (dateStr > todayStr) return 'future';
+  if (!dailyTarget) return mins > 0 ? 'logged' : (dateStr === todayStr ? 'today-empty' : 'empty');
+  if (mins <= 0) return dateStr === todayStr ? 'today-empty' : 'missed';
+  if (mins >= dailyTarget * 1.5) return 'over';
+  if (mins >= dailyTarget) return 'done';
+  return 'partial';
+}
+
+function colorForStatus(status, mins) {
+  switch (status) {
+    case 'missed': return 'var(--danger)';
+    case 'partial': return 'var(--warn)';
+    case 'done': return 'var(--success)';
+    case 'over': return 'var(--over)';
+    case 'today-empty': return 'var(--cell-empty)';
+    case 'future': return 'var(--cell-empty)';
+    case 'logged': return colorFor(mins);
+    default: return 'var(--cell-empty)';
+  }
+}
+
 function render() {
   const stats = computeStats();
-  document.getElementById('statStreak').textContent = stats.currentStreak + 'd';
-  document.getElementById('statLongest').textContent = stats.longestStreak + 'd';
+  document.getElementById('statStreak').textContent = stats.currentStreak;
   document.getElementById('statHours').textContent = (stats.totalMinutes / 60).toFixed(1);
   document.getElementById('statDays').textContent = stats.totalDays;
-  document.getElementById('statWeek').textContent = (weekMinutes() / 60).toFixed(1) + 'h';
-  document.getElementById('statMonth').textContent = (monthMinutes() / 60).toFixed(1) + 'h';
 
+  renderHero(stats);
   renderExamBanner();
-  renderTargetCard();
+  renderToday();
+  renderReadiness();
   renderUpcomingTargets();
   renderHeatmap(stats.heatmap);
+  renderSubjectDonut(stats);
   renderSubjectList(stats);
   renderSubjectTargetInputs();
   renderLogList();
   renderCalendar();
+}
+
+function renderHero(stats) {
+  const name = (appData.settings.userName || '').trim();
+  const h = new Date().getHours();
+  const greetWord = h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
+  document.getElementById('heroGreet').textContent = `${greetWord}${name ? ', ' + name : ''} 👋`;
+  const streakTxt = stats.currentStreak > 0 ? `You're on a ${stats.currentStreak}-day streak — keep it going.` : "Let's start today's streak.";
+  document.getElementById('heroSub').textContent = streakTxt;
+
+  const target = appData.settings.dailyTargetMinutes || 0;
+  const wk = weekMinutes();
+  const wrap = document.getElementById('heroTargetBarWrap');
+  if (target) {
+    const weeklyPct = Math.min(100, Math.round(wk / (target * 7) * 100));
+    document.getElementById('heroTargetLine').textContent = `Weekly target: ${(wk / 60).toFixed(1)}h / ${((target * 7) / 60).toFixed(1)}h (${weeklyPct}%)`;
+    document.getElementById('heroTargetBar').style.width = weeklyPct + '%';
+    wrap.classList.remove('hidden');
+  } else {
+    document.getElementById('heroTargetLine').textContent = `This week: ${(wk / 60).toFixed(1)}h logged`;
+    wrap.classList.add('hidden');
+  }
+
+  renderWeekBars(stats, target);
+}
+
+function renderWeekBars(stats, target) {
+  const el = document.getElementById('weekBars');
+  const { mondayObj } = weekRange();
+  const todayStr = localISODate(new Date());
+  const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const dayMins = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mondayObj); d.setDate(d.getDate() + i);
+    const key = localISODate(d);
+    dayMins.push({ key, mins: stats.heatmap[key] || 0 });
+  }
+  const maxVal = Math.max(target || 0, ...dayMins.map(d => d.mins), 1);
+  el.innerHTML = dayMins.map((d, i) => {
+    const status = dayStatus(d.key, d.mins, todayStr, target);
+    const color = colorForStatus(status, d.mins);
+    const heightPct = Math.max(6, Math.round((d.mins / maxVal) * 100));
+    const isToday = d.key === todayStr;
+    return `<div class="weekbar-col${isToday ? ' is-today' : ''}">
+      <div class="weekbar-fill" style="height:${d.key > todayStr ? 4 : heightPct}%;background:${d.key > todayStr ? 'var(--cell-empty)' : color};"></div>
+      <div class="weekbar-lbl">${dayLetters[i]}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderExamBanner() {
@@ -938,15 +1292,66 @@ function renderExamBanner() {
     : `Exam date (${examDate}) has passed`;
 }
 
-function renderTargetCard() {
-  const card = document.getElementById('targetCard');
+function renderToday() {
+  const today = localISODate(new Date());
+  const dayLogs = appData.logs.filter(l => l.date === today).sort((a, b) => (b.ts || '').localeCompare(a.ts || ''));
+  const total = dayLogs.reduce((s, l) => s + l.minutes, 0);
   const target = appData.settings.dailyTargetMinutes || 0;
-  if (!target) { card.classList.add('hidden'); return; }
+
+  document.getElementById('todayVal').textContent = `${Math.floor(total / 60)}h ${total % 60}m`;
+  const barWrap = document.getElementById('todayBarWrap');
+  if (target) {
+    const pct = Math.min(100, Math.round((total / target) * 100));
+    document.getElementById('todaySubLbl').textContent = `${pct}% of your ${(target / 60).toFixed(1)}h daily target`;
+    document.getElementById('todayBar').style.width = pct + '%';
+    document.getElementById('todayBar').style.background = total >= target ? 'var(--success)' : 'var(--accent-light)';
+    barWrap.classList.remove('hidden');
+  } else {
+    document.getElementById('todaySubLbl').textContent = dayLogs.length ? `${dayLogs.length} session${dayLogs.length === 1 ? '' : 's'} logged` : 'No sessions logged yet today';
+    barWrap.classList.add('hidden');
+  }
+
+  const list = document.getElementById('todayLogList');
+  if (!dayLogs.length) { list.innerHTML = ''; return; }
+  list.innerHTML = dayLogs.map(l => `
+    <div class="today-row">
+      <div>
+        <strong>${l.subject}</strong> · ${l.minutes}m
+        <span class="stage-pill">${STAGE_LABELS_SHORT[l.stage || 'syllabus']}</span>
+        ${l.topic ? `<div style="color:var(--text-muted);font-size:11px;margin-top:2px;">${l.topic}</div>` : ''}
+      </div>
+      <button class="today-row-x" onclick="deleteLog('${l.id}')" title="Delete">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderReadiness() {
+  const card = document.getElementById('readinessCard');
+  const { rows, overallAll } = computeReadiness();
+  if (!rows.length) { card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
-  const today = todayMinutes();
-  const pct = Math.min(100, Math.round((today / target) * 100));
-  document.getElementById('targetText').textContent = `${(today / 60).toFixed(1)}h / ${(target / 60).toFixed(1)}h today (${pct}%)`;
-  document.getElementById('targetBar').style.width = pct + '%';
+  document.getElementById('readinessOverall').textContent = overallAll + '%';
+  const table = document.getElementById('readinessTable');
+  table.innerHTML = `
+    <tr><th>Subject</th><th>Syllabus</th><th>R1</th><th>R2</th><th>Practice</th></tr>
+    ${rows.map(r => `<tr>
+      <td>${r.subject}</td>
+      <td>${r.syllabusPct}%</td>
+      <td>${r.r1Pct}%</td>
+      <td>${r.r2Pct}%</td>
+      <td>${r.pracPct}%</td>
+    </tr>`).join('')}
+  `;
+}
+
+function copyReadiness() {
+  const { rows, overallAll } = computeReadiness();
+  if (!rows.length) return;
+  let txt = `🎓 Exam Readiness\nOverall: ${overallAll}%\n\nSubject | Syllabus | R1 | R2 | Practice\n`;
+  rows.forEach(r => { txt += `${r.subject} | ${r.syllabusPct}% | ${r.r1Pct}% | ${r.r2Pct}% | ${r.pracPct}%\n`; });
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(() => showTodayToast('Copied ✓', true)).catch(() => {});
+  }
 }
 
 function collectTargetDates() {
@@ -988,7 +1393,7 @@ function renderUpcomingTargets() {
     const overdue = it.days < 0;
     const dayLabel = overdue ? `${Math.abs(it.days)}d overdue` : (it.days === 0 ? 'Today' : `${it.days}d left`);
     return `<div class="subject-row">
-      <div class="top-line"><span>${it.subject} — ${it.label}</span><span style="color:${overdue ? '#fca5a5' : '#7dd3fc'}">${dayLabel}</span></div>
+      <div class="top-line"><span>${it.subject} — ${it.label}</span><span style="color:${overdue ? 'var(--danger)' : 'var(--accent-light)'}">${dayLabel}</span></div>
       <div class="sub-line">${it.date}</div>
     </div>`;
   }).join('');
@@ -999,6 +1404,8 @@ function renderHeatmap(heatmap) {
   el.innerHTML = '';
   const days = 26 * 7;
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  const todayStr = localISODate(today);
+  const target = appData.settings.dailyTargetMinutes || 0;
   const end = new Date(today); end.setDate(end.getDate() + (6 - today.getDay()));
   const start = new Date(end); start.setDate(start.getDate() - (days - 1));
 
@@ -1009,10 +1416,40 @@ function renderHeatmap(heatmap) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.title = key + ': ' + mins + ' min';
-    cell.style.background = colorFor(mins);
+    const status = dayStatus(key, mins, todayStr, target);
+    cell.style.background = colorForStatus(status, mins);
     if (d > today) cell.style.opacity = '0.25';
     el.appendChild(cell);
   }
+
+  renderLegends(target);
+}
+
+function renderLegends(target) {
+  const heatEl = document.getElementById('heatmapLegend');
+  const calEl = document.getElementById('calLegend');
+  let html;
+  if (target) {
+    html = `
+      <span class="legend-item"><div class="cell" style="background:var(--cell-empty)"></div>No data</span>
+      <span class="legend-item"><div class="cell" style="background:var(--danger)"></div>Missed</span>
+      <span class="legend-item"><div class="cell" style="background:var(--warn)"></div>Partial</span>
+      <span class="legend-item"><div class="cell" style="background:var(--success)"></div>Target met</span>
+      <span class="legend-item"><div class="cell" style="background:var(--over)"></div>Overachieved</span>
+    `;
+  } else {
+    html = `
+      Less
+      <div class="cell" style="background:var(--cell-empty)"></div>
+      <div class="cell" style="background:#123d29"></div>
+      <div class="cell" style="background:#1a5c3a"></div>
+      <div class="cell" style="background:#2e9e5b"></div>
+      <div class="cell" style="background:#4ade80"></div>
+      More
+    `;
+  }
+  if (heatEl) heatEl.innerHTML = html;
+  if (calEl) calEl.innerHTML = html + '<span class="legend-item" style="margin-left:6px;"><span class="tgt-dot-legend"></span>target date</span>';
 }
 
 function colorFor(mins) {
@@ -1023,28 +1460,69 @@ function colorFor(mins) {
   return '#4ade80';
 }
 
+function renderSubjectDonut(stats) {
+  const donut = document.getElementById('subjDonut');
+  const legend = document.getElementById('donutLegend');
+  const entries = Object.keys(stats.subjectMinutes)
+    .map((s, i) => ({ subject: s, mins: stats.subjectMinutes[s] }))
+    .sort((a, b) => b.mins - a.mins);
+  const total = entries.reduce((s, e) => s + e.mins, 0);
+  document.getElementById('donutTotal').textContent = (total / 60).toFixed(0) + 'h';
+
+  if (!total) {
+    donut.style.background = 'conic-gradient(var(--cell-empty) 0 100%)';
+    legend.innerHTML = '<div class="donut-legend-row" style="color:var(--text-muted);">No sessions logged yet</div>';
+    return;
+  }
+
+  let acc = 0;
+  const stops = entries.map((e, i) => {
+    const from = acc;
+    acc += (e.mins / total) * 100;
+    return `${PALETTE[i % PALETTE.length]} ${from}% ${acc}%`;
+  });
+  donut.style.background = `conic-gradient(${stops.join(',')})`;
+
+  legend.innerHTML = entries.slice(0, 8).map((e, i) => {
+    const pct = Math.round((e.mins / total) * 100);
+    return `<div class="donut-legend-row">
+      <span class="donut-dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
+      <span>${e.subject}</span>
+      <span class="pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
 function renderSubjectList(stats) {
   const list = document.getElementById('subjectList');
   const targets = appData.settings.subjectTargets || {};
-  const allSubjects = new Set([...Object.keys(stats.subjectMinutes), ...Object.keys(targets)]);
-  if (!allSubjects.size) { list.innerHTML = '<div class="subject-row"><span>No sessions logged yet</span></div>'; return; }
+  const allSubjects = Array.from(new Set([...Object.keys(stats.subjectMinutes), ...Object.keys(targets)]))
+    .sort((a, b) => (stats.subjectMinutes[b] || 0) - (stats.subjectMinutes[a] || 0));
+  if (!allSubjects.length) { list.innerHTML = '<div class="subject-row"><span>No sessions logged yet</span></div>'; return; }
 
-  list.innerHTML = Array.from(allSubjects)
-    .sort((a, b) => (stats.subjectMinutes[b] || 0) - (stats.subjectMinutes[a] || 0))
-    .map(s => {
-      const mins = stats.subjectMinutes[s] || 0;
-      const tgtHrs = targets[s] && targets[s].hours;
-      let bar = '';
-      if (tgtHrs) {
-        const pct = Math.min(100, Math.round((mins / 60 / tgtHrs) * 100));
-        bar = `<div class="bar-track small"><div class="bar-fill small" style="width:${pct}%;"></div></div>
-               <div class="sub-line">${(mins / 60).toFixed(1)}h / ${tgtHrs}h (${pct}%)</div>`;
-      }
-      return `<div class="subject-row">
-        <div class="top-line"><span>${s}</span><span>${(mins / 60).toFixed(1)}h</span></div>
-        ${bar}
-      </div>`;
-    }).join('');
+  list.innerHTML = allSubjects.map((s, i) => {
+    const mins = stats.subjectMinutes[s] || 0;
+    const tgtHrs = targets[s] && targets[s].hours;
+    const color = PALETTE[i % PALETTE.length];
+    let bar, subLine;
+    if (tgtHrs) {
+      const pct = Math.min(100, Math.round((mins / 60 / tgtHrs) * 100));
+      bar = pct;
+      subLine = `${(mins / 60).toFixed(1)}h / ${tgtHrs}h (${pct}%)`;
+    } else {
+      const maxMins = Math.max(...Object.values(stats.subjectMinutes), 1);
+      bar = Math.round((mins / maxMins) * 100);
+      subLine = `${(mins / 60).toFixed(1)}h logged`;
+    }
+    return `<div class="subject-row">
+      <div class="top-line">
+        <span class="name"><span class="donut-dot" style="background:${color}"></span>${s}</span>
+        <span>${(mins / 60).toFixed(1)}h</span>
+      </div>
+      <div class="subj-bar-track"><div class="subj-bar-fill" style="width:${bar}%;background:${color};"></div></div>
+      <div class="sub-line">${subLine}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderLogList() {
@@ -1064,7 +1542,7 @@ function renderLogList() {
   el.innerHTML = rows.map(r => `
     <div class="log-row" id="row_${r.id}">
       <div>
-        <div><strong>${r.date}</strong> · ${r.subject} · ${r.minutes}m</div>
+        <div><strong>${r.date}</strong> · ${r.subject} · ${r.minutes}m<span class="stage-pill">${STAGE_LABELS_SHORT[r.stage || 'syllabus']}</span></div>
         <div style="color:var(--text-muted);font-size:12px;">${r.topic || ''}${r.topic && r.notes ? ' — ' : ''}${r.notes || ''}</div>
       </div>
       <div class="log-row-actions">
@@ -1116,6 +1594,7 @@ function renderCalendar() {
   const stats = computeStats();
   const heatmap = stats.heatmap;
   const targetDates = collectTargetDates();
+  const target = appData.settings.dailyTargetMinutes || 0;
 
   document.getElementById('calTitle').textContent =
     new Date(calYear, calMonth, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -1139,12 +1618,15 @@ function renderCalendar() {
     cell.className = 'cal-cell'
       + (dateStr === todayStr ? ' today' : '')
       + (dateStr === calSelectedDate ? ' selected' : '');
-    cell.style.background = colorFor(mins);
+    const status = dayStatus(dateStr, mins, todayStr, target);
+    cell.style.background = colorForStatus(status, mins);
     cell.onclick = () => selectCalDay(dateStr);
     const dot = targetDates[dateStr] ? `<div class="tgt-dot" title="${targetDates[dateStr].join(', ')}"></div>` : '';
     cell.innerHTML = `<span class="dnum">${day}</span>${dot}`;
     grid.appendChild(cell);
   }
+
+  renderLegends(target);
 
   if (calSelectedDate) {
     renderCalDayPanel(calSelectedDate);
@@ -1172,7 +1654,7 @@ function renderCalDayPanel(dateStr) {
     html += dayLogs.map(l => `
       <div class="log-row">
         <div>
-          <div><strong>${l.subject}</strong> · ${l.minutes}m</div>
+          <div><strong>${l.subject}</strong> · ${l.minutes}m<span class="stage-pill">${STAGE_LABELS_SHORT[l.stage || 'syllabus']}</span></div>
           <div style="color:var(--text-muted);font-size:12px;">${l.topic || ''}${l.topic && l.notes ? ' — ' : ''}${l.notes || ''}</div>
         </div>
       </div>`).join('');
